@@ -1,0 +1,54 @@
+# @@PROJECT_TITLE@@ justfile — development recipes
+
+set shell := ["powershell.exe", "-NoProfile", "-Command"]
+
+port := env_var_or_default('PORT', '@@PORT@@')
+
+# List available recipes
+default:
+    @just --list
+
+# ─── Guards ───────────────────────────────────────────────
+
+# uv — installed by setup.ps1; provides the Python that serves the site.
+[private]
+_require-uv:
+    @if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { Write-Error "uv not found on PATH.`n  -> Run setup.ps1 first:  pwsh ./setup.ps1"; exit 1 }
+
+# ─── App lifecycle ───────────────────────────────────────
+
+# Runs `stop` first so a previous run's server doesn't linger. The --directory arg
+# carries this repo's path on the python command line — that's how `stop` scopes
+# the kill to THIS project.
+# Serve the site on http://127.0.0.1:{{port}} (background window).
+start: _require-uv stop
+    Start-Process powershell -ArgumentList "-NoProfile", "-Command", "uv run python -m http.server {{port}} --bind 127.0.0.1 --directory '{{justfile_directory()}}\@@DOCROOT@@'"
+    Start-Sleep -Seconds 2
+    Write-Host "Started: http://127.0.0.1:{{port}}  (stop with: just stop)"
+
+# Serve in the FOREGROUND (Ctrl+C to stop).
+serve: _require-uv
+    uv run python -m http.server {{port}} --bind 127.0.0.1 --directory '{{justfile_directory()}}\@@DOCROOT@@'
+
+# Matches python whose command line contains this repo's path (trailing '\').
+# Stop only THIS project's server, not every python on the box.
+stop:
+    $procs = @(Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" | Where-Object { $_.CommandLine -like '*{{justfile_directory()}}\*' }); $procs | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Write-Host "Stopped $($procs.Count) project python.exe process(es)"
+
+# Open the served site in the default browser (start the server first).
+open:
+    Start-Process "http://127.0.0.1:{{port}}"
+
+# ─── Tools ───────────────────────────────────────────────
+
+# Launch Claude Code with all permissions — Sonnet (latest)
+claudex:
+    claude --dangerously-skip-permissions --model sonnet
+
+# Launch Claude Code with all permissions — Opus (latest)
+claudeo:
+    claude --dangerously-skip-permissions --model opus
+
+# Launch Claude Code with all permissions — Haiku (latest)
+claudeh:
+    claude --dangerously-skip-permissions --model haiku

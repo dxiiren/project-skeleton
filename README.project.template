@@ -1,0 +1,50 @@
+# @@PROJECT_TITLE@@
+
+@@WHAT_IT_IS@@
+
+> **New developer? Start with [`.docs/tldr.md`](.docs/tldr.md)** — every doc summarised on one
+> page. The full guide lives in [`.docs/`](.docs/README.md).
+
+## Prerequisites
+
+| Tool | Version | Installed by |
+| --- | --- | --- |
+| PowerShell + winget | Windows 10/11 stock | — (the only true prerequisites) |
+@@PREREQ_ROWS@@
+| just | any recent | `setup.ps1` |
+| Claude Code CLI | latest | `setup.ps1` (optional, for AI-assisted dev) |
+
+## Quick start
+
+```powershell
+# 1. One-time machine setup (idempotent — safe to re-run)
+pwsh ./setup.ps1
+
+# 2. Close and reopen PowerShell so PATH updates land
+@@QUICKSTART_STEPS@@
+```
+
+The app is now at **http://127.0.0.1:@@PORT@@**. Stop it with `just stop`.
+
+## Commands
+
+Run `just` with no arguments to list every recipe. The ones you'll use daily:
+
+| Command | What it does |
+| --- | --- |
+@@COMMANDS_ROWS@@
+| `just claudex` | Launch Claude Code (Sonnet, all permissions) |
+
+## Troubleshooting
+
+@@TROUBLESHOOTING_H3S@@
+
+More in [`.docs/06-troubleshooting/common-issues.md`](.docs/06-troubleshooting/common-issues.md).
+
+## Project layout
+
+```
+@@LAYOUT_TREE@@
+```
+
+@@LICENSE_SECTION@@

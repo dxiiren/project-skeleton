@@ -1,0 +1,53 @@
+# @@PROJECT_TITLE@@ justfile — development recipes
+
+set shell := ["powershell.exe", "-NoProfile", "-Command"]
+
+# PHP extracted by setup.ps1 into the user's LOCALAPPDATA\Programs\php-@@PHP_MINOR@@.
+# Absolute path keeps recipes working even in PowerShell sessions opened before
+# setup.ps1 updated the User PATH environment variable.
+php  := env_var('LOCALAPPDATA') + '\Programs\php-@@PHP_MINOR@@\php.exe'
+port := env_var_or_default('PORT', '@@PORT@@')
+
+# List available recipes
+default:
+    @just --list
+
+# ─── Guards ───────────────────────────────────────────────
+
+# PHP @@PHP_MINOR@@ — installed by setup.ps1 to a pinned path; needed by every recipe here.
+[private]
+_require-php:
+    @if (-not (Test-Path '{{php}}')) { Write-Error "PHP @@PHP_MINOR@@ not found at {{php}}`n  -> Run setup.ps1 first:  pwsh ./setup.ps1"; exit 1 }
+
+# ─── App lifecycle ───────────────────────────────────────
+
+# Runs `stop` first so a previous run's server doesn't linger. The docroot path in the
+# command line is what lets `stop` scope the kill to THIS project.
+# Start the built-in PHP dev server on http://127.0.0.1:{{port}} (background window).
+start: _require-php stop
+    Start-Process powershell -ArgumentList "-NoProfile", "-Command", "& '{{php}}' -S 127.0.0.1:{{port}} -t '{{justfile_directory()}}\@@DOCROOT@@'"
+    Start-Sleep -Seconds 2
+    Write-Host "Started: http://127.0.0.1:{{port}}  (stop with: just stop)"
+
+# Serve in the FOREGROUND (Ctrl+C to stop) — handy for watching request logs.
+serve: _require-php
+    & '{{php}}' -S 127.0.0.1:{{port}} -t '{{justfile_directory()}}\@@DOCROOT@@'
+
+# Matches php whose command line contains this repo's path (trailing '\').
+# Stop only THIS project's php.exe, not every php on the box.
+stop:
+    $procs = @(Get-CimInstance Win32_Process -Filter "Name = 'php.exe'" | Where-Object { $_.CommandLine -like '*{{justfile_directory()}}\*' }); $procs | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Write-Host "Stopped $($procs.Count) project php.exe process(es)"
+
+# ─── Tools ───────────────────────────────────────────────
+
+# Launch Claude Code with all permissions — Sonnet (latest)
+claudex:
+    claude --dangerously-skip-permissions --model sonnet
+
+# Launch Claude Code with all permissions — Opus (latest)
+claudeo:
+    claude --dangerously-skip-permissions --model opus
+
+# Launch Claude Code with all permissions — Haiku (latest)
+claudeh:
+    claude --dangerously-skip-permissions --model haiku

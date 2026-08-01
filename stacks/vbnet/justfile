@@ -1,0 +1,59 @@
+# @@PROJECT_TITLE@@ justfile — development recipes
+
+set shell := ["powershell.exe", "-NoProfile", "-Command"]
+
+# MSBuild resolution: prefer VS Build Tools 2022 (builds warning-free) when installed;
+# otherwise the Framework MSBuild that ships with every Windows install — it builds this
+# solution fine with 3 benign warnings (see .docs/06-troubleshooting/common-issues.md).
+msbuild_bt := 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe'
+msbuild_fw := 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe'
+msbuild := if path_exists(msbuild_bt) == "true" { msbuild_bt } else { msbuild_fw }
+
+sln := '@@SRC@@'
+exe_dir := justfile_directory() + '\@@MAIN_CLASS@@\bin\Debug'
+exe := exe_dir + '\@@MAIN_CLASS@@.exe'
+
+# List available recipes
+default:
+    @just --list
+
+# ─── Guards ───────────────────────────────────────────────
+
+# MSBuild — resolved at the top of this file; needed by build/run.
+[private]
+_require-msbuild:
+    @if (-not (Test-Path '{{msbuild}}')) { Write-Error "MSBuild not found at {{msbuild}}.`n  -> Run setup.ps1 first:  pwsh ./setup.ps1"; exit 1 }
+
+# ─── Build & run ─────────────────────────────────────────
+
+# Build the solution (Debug) with MSBuild.
+build: _require-msbuild
+    & '{{msbuild}}' '{{sln}}' /p:Configuration=Debug /v:m /nologo; exit $LASTEXITCODE
+
+# Working directory is pinned to bin\Debug so the app's flat-file credential store
+# (UsernameAndPassword.txt) is created next to the exe — same behavior as running from VS.
+# Build, then launch the WinForms app (the Login window opens; close with `just stop`).
+run: build
+    Start-Process -FilePath '{{exe}}' -WorkingDirectory '{{exe_dir}}'
+
+# Stop only THIS repo's app processes (matched by executable path — safe for other projects).
+stop:
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -like '{{justfile_directory()}}\*' }; if ($procs) { $procs | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }; Write-Host "Stopped $(@($procs).Count) process(es)." } else { Write-Host "No app processes running from this repo." }
+
+# Delete MSBuild output (bin\ and obj\ under the project folder).
+clean:
+    Get-ChildItem -Path '{{justfile_directory()}}' -Recurse -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -in 'bin','obj' } | Remove-Item -Recurse -Force
+
+# ─── Tools ───────────────────────────────────────────────
+
+# Launch Claude Code with all permissions — Sonnet (latest)
+claudex:
+    claude --dangerously-skip-permissions --model sonnet
+
+# Launch Claude Code with all permissions — Opus (latest)
+claudeo:
+    claude --dangerously-skip-permissions --model opus
+
+# Launch Claude Code with all permissions — Haiku (latest)
+claudeh:
+    claude --dangerously-skip-permissions --model haiku

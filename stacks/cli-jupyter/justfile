@@ -1,0 +1,45 @@
+# @@PROJECT_TITLE@@ justfile — development recipes
+
+set shell := ["powershell.exe", "-NoProfile", "-Command"]
+
+port := env_var_or_default('PORT', '@@PORT@@')
+
+# List available recipes
+default:
+    @just --list
+
+# ─── Guards ───────────────────────────────────────────────
+
+# uv — installed by setup.ps1; provides Python + Jupyter on demand (nothing global).
+[private]
+_require-uv:
+    @if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { Write-Error "uv not found on PATH.`n  -> Run setup.ps1 first:  pwsh ./setup.ps1"; exit 1 }
+
+# ─── Notebooks ───────────────────────────────────────────
+
+# Open Jupyter Lab on http://127.0.0.1:{{port}} (foreground, Ctrl+C to stop).
+lab: _require-uv
+    uv run --with jupyter jupyter lab --no-browser --port {{port}} --notebook-dir '{{justfile_directory()}}'
+
+# Execute one notebook headlessly (checks it still runs end to end).
+# Example: just execute path/to/notebook.ipynb
+execute nb: _require-uv
+    uv run --with jupyter,nbclient jupyter nbconvert --to notebook --execute '{{nb}}' --output-dir $env:TEMP
+
+# Stop only THIS project's Jupyter server (matches by repo path on the command line).
+stop:
+    $procs = @(Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" | Where-Object { $_.CommandLine -like '*{{justfile_directory()}}*' }); $procs | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Write-Host "Stopped $($procs.Count) project python.exe process(es)"
+
+# ─── Tools ───────────────────────────────────────────────
+
+# Launch Claude Code with all permissions — Sonnet (latest)
+claudex:
+    claude --dangerously-skip-permissions --model sonnet
+
+# Launch Claude Code with all permissions — Opus (latest)
+claudeo:
+    claude --dangerously-skip-permissions --model opus
+
+# Launch Claude Code with all permissions — Haiku (latest)
+claudeh:
+    claude --dangerously-skip-permissions --model haiku

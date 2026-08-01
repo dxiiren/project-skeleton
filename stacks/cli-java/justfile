@@ -1,0 +1,49 @@
+# @@PROJECT_TITLE@@ justfile — development recipes
+
+set shell := ["powershell.exe", "-NoProfile", "-Command"]
+
+# List available recipes
+default:
+    @just --list
+
+# ─── Guards ───────────────────────────────────────────────
+
+# JDK — installed by setup.ps1; needed by build/run.
+[private]
+_require-jdk:
+    @if (-not (Get-Command javac -ErrorAction SilentlyContinue)) { Write-Error "JDK (javac) not found on PATH.`n  -> Run setup.ps1 first:  pwsh ./setup.ps1"; exit 1 }
+
+# ─── Build & run ─────────────────────────────────────────
+
+# Compile all .java sources into out\.
+build: _require-jdk
+    if (-not (Test-Path out)) { New-Item -ItemType Directory out | Out-Null }
+    javac -d out *.java
+
+# PowerShell's `Get-Content |` pipe prepends a UTF-8 BOM to the first stdin line (crashes
+# apps whose first read is numeric); cmd redirection passes the file bytes through untouched.
+# Compile then run the app — stdin comes from sample-input.txt.
+run: build
+    cmd /c "java -cp out @@MAIN_CLASS@@ < sample-input.txt"
+
+# Run with YOUR OWN typed input (interactive).
+run-interactive: build
+    java -cp out @@MAIN_CLASS@@
+
+# Remove compiled classes.
+clean:
+    if (Test-Path out) { Remove-Item -Recurse -Force out }
+
+# ─── Tools ───────────────────────────────────────────────
+
+# Launch Claude Code with all permissions — Sonnet (latest)
+claudex:
+    claude --dangerously-skip-permissions --model sonnet
+
+# Launch Claude Code with all permissions — Opus (latest)
+claudeo:
+    claude --dangerously-skip-permissions --model opus
+
+# Launch Claude Code with all permissions — Haiku (latest)
+claudeh:
+    claude --dangerously-skip-permissions --model haiku

@@ -1,0 +1,56 @@
+# @@PROJECT_TITLE@@ justfile — development recipes
+
+set shell := ["powershell.exe", "-NoProfile", "-Command"]
+
+# w64devkit extracted by setup.ps1 into the user's LOCALAPPDATA\Programs\w64devkit.
+# Absolute path keeps recipes working even in PowerShell sessions opened before
+# setup.ps1 updated the User PATH environment variable.
+gpp := env_var('LOCALAPPDATA') + '\Programs\w64devkit\bin\g++.exe'
+
+# List available recipes
+default:
+    @just --list
+
+# ─── Guards ───────────────────────────────────────────────
+
+# g++ — installed by setup.ps1 (w64devkit) to a pinned path; needed by build/run.
+[private]
+_require-gpp:
+    @if (-not (Test-Path '{{gpp}}')) { Write-Error "g++ not found at {{gpp}}`n  -> Run setup.ps1 first:  pwsh ./setup.ps1"; exit 1 }
+
+# ─── Build & run ─────────────────────────────────────────
+
+# g++ resolves its assembler `as` via PATH, so the w64devkit bin dir must lead PATH for
+# the compile even though g++ itself is invoked by absolute path.
+# Compile the app into out\app.exe.
+build: _require-gpp
+    if (-not (Test-Path out)) { New-Item -ItemType Directory out | Out-Null }
+    $env:Path = (Split-Path '{{gpp}}') + ';' + $env:Path; & '{{gpp}}' -o out\app.exe @@SRC@@
+
+# PowerShell's `Get-Content |` pipe prepends a UTF-8 BOM to the first stdin line (crashes
+# apps whose first read is numeric); cmd redirection passes the file bytes through untouched.
+# Compile then run the app — stdin comes from sample-input.txt.
+run: build
+    cmd /c "out\app.exe < sample-input.txt"
+
+# Run with YOUR OWN typed input (interactive).
+run-interactive: build
+    .\out\app.exe
+
+# Remove build output.
+clean:
+    if (Test-Path out) { Remove-Item -Recurse -Force out }
+
+# ─── Tools ───────────────────────────────────────────────
+
+# Launch Claude Code with all permissions — Sonnet (latest)
+claudex:
+    claude --dangerously-skip-permissions --model sonnet
+
+# Launch Claude Code with all permissions — Opus (latest)
+claudeo:
+    claude --dangerously-skip-permissions --model opus
+
+# Launch Claude Code with all permissions — Haiku (latest)
+claudeh:
+    claude --dangerously-skip-permissions --model haiku

@@ -134,6 +134,19 @@ Write-Host "[OK] CLAUDE.md.template -> CLAUDE.md, README.project.template -> REA
 Remove-Item -Recurse -Force $stacksDir
 Write-Host "[OK] Removed stacks\" -ForegroundColor Green
 
+# The skeleton's own Pester suite (tests\init.Tests.ps1) is scaffolding too -- a
+# scaffolded project must not inherit tests that target the now-deleted init.ps1.
+# Remove only the skeleton's file (an imported project may own other tests), then the
+# tests\ folder if that emptied it. (The skeleton's dev justfile needs no removal:
+# step 1 already overwrote it with the stack's justfile.)
+$testsDir  = Join-Path $root "tests"
+$skelTests = Join-Path $testsDir "init.Tests.ps1"
+if (Test-Path $skelTests) {
+    Remove-Item -Force $skelTests
+    if (-not (Get-ChildItem -Path $testsDir -Force)) { Remove-Item -Force $testsDir }
+    Write-Host "[OK] Removed tests\init.Tests.ps1 (the skeleton's own Pester suite)" -ForegroundColor Green
+}
+
 # ---------- 5. Fill the mechanical tokens ----------
 $tokens = [ordered]@{
     '@@PROJECT_TITLE@@' = $title

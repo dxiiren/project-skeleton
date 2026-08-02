@@ -50,6 +50,8 @@ code, the applicable optional skills enabled, a passing skill audit, and a boot-
 ```
 project-skeleton/
   init.ps1                  # the scaffolder (step 2 above) — deletes itself when done
+  justfile                  # skeleton DEV recipes (just test) — replaced by the stack's at init
+  tests/init.Tests.ps1      # Pester suite locking init.ps1's behavior — removed at init
   GROUNDING.md              # conventions bible -> becomes .docs/05-reference/conventions.md
   CLAUDE.md.template        # -> CLAUDE.md at init
   README.project.template   # -> README.md at init (replaces this file)
@@ -68,6 +70,40 @@ project-skeleton/
 Token conventions, invariants, and the per-stack boot-verify bar live in
 [`GROUNDING.md`](GROUNDING.md).
 
+## Testing
+
+The scaffold behavior is locked by a Pester suite:
+
+```powershell
+just test
+# equivalent: pwsh -Command "Invoke-Pester -Path tests"  (Pester 5+, see below)
+```
+
+`tests/init.Tests.ps1` copies the whole skeleton into a fresh `%TEMP%` folder per
+Describe and runs `init.ps1` there — the working tree is never scaffolded, and temp
+copies are deleted afterwards. It covers two full scaffolds (`static` with
+Port/Docroot, `cli-java` with MainClass) plus the negative path:
+
+- `justfile` + `setup.ps1` land at the root with **zero** mechanical tokens; Port,
+  Title, Docroot and MainClass values are actually wired in.
+- `CLAUDE.md`/`README.md` are created from the templates; `GROUNDING.md` and the
+  stack's `NOTES.md` move into `.docs/05-reference/`.
+- The scaffolding removes itself: `stacks/`, `init.ps1`, `gitignore-block.txt`, and
+  the skeleton's own `tests/` suite.
+- The gitignore block is merged; **content** tokens (`WHAT_IT_IS`, ...) survive for
+  `/ground-project`, and `conventions.md`'s token table is skipped by the fill.
+- Re-running init on an already-scaffolded copy **refuses** (exit 1) and leaves the
+  project untouched.
+
+Requirement: Pester 5+ visible to `pwsh` (the Windows-inbox Pester 3 can't run it):
+
+```powershell
+Install-Module Pester -Scope CurrentUser -Force -SkipPublisherCheck
+```
+
+Change `init.ps1` or a stack's files → run `just test` before pushing; if you change
+what init observably does, update the suite in the same commit.
+
 ## Adding a stack
 
 1. Create `stacks/<name>/` with a `setup.ps1`, a `justfile`, and a `NOTES.md`, following
@@ -80,4 +116,5 @@ Token conventions, invariants, and the per-stack boot-verify bar live in
    (`MAIN_CLASS` / `SRC` / `DOCROOT` — see the vbnet mapping in `stacks/vbnet/NOTES.md`)
    and add the stack to the matching prompt list in `init.ps1`.
 5. Prove it: run `.\init.ps1` against a copy, `just --list`, `pwsh ./setup.ps1`, and the
-   stack's boot-verify before pushing.
+   stack's boot-verify before pushing — and `just test` must stay green (add a Describe
+   for the new stack if it introduces a new input/token mapping).

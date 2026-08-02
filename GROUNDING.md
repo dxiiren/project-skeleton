@@ -17,6 +17,19 @@ invariants, the token system, the per-stack boot-verify bar, and the git rules.
    content token, grounds the skills' worked examples in this project's facts, enables
    qualifying optional skills, runs the skill audit to PASS, and boot-verifies.
 
+## Scaffold self-test (Pester-locked)
+
+Step 1's observable behavior is **locked by a Pester suite**: `tests/init.Tests.ps1`
+(run `just test` in the un-initialized skeleton; needs Pester 5+ visible to `pwsh`).
+It scaffolds throwaway `%TEMP%` copies for a server stack (static) and a CLI stack
+(cli-java) and asserts every step — stack files at root, mechanical tokens filled,
+templates promoted, scaffolding removed, gitignore merged, content tokens preserved,
+`conventions.md` fill-skip — plus the already-scaffolded re-run guard (refuses, exit 1).
+If you change what `init.ps1` observably does, update the suite in the SAME commit and
+keep it green. A scaffolded project inherits none of this: init removes
+`tests\init.Tests.ps1` during cleanup and the dev justfile is overwritten by the
+stack's justfile.
+
 ## Token system
 
 Tokens are delimited by doubled at-signs. Two tiers:
@@ -73,7 +86,11 @@ convention don't fail the sweep and the sweep command doesn't match itself.
   `CLAUDE.md.template`, `README.project.template`, `GROUNDING.md` (this token table),
   `stacks/**` (all files), `.docs/**` (placeholders), `.claude/memory/MEMORY.md`,
   `.claude/skills/**` and `.claude/skills-optional/**` (mechanical tokens + docs that
-  reference content tokens).
+  reference content tokens), and the root dev `justfile` (a deliberate guard-marker
+  comment: init's already-scaffolded guard is "root justfile with no doubled at-signs",
+  so the skeleton's own justfile must carry one to keep init runnable).
+  `tests/init.Tests.ps1` is deliberately NOT in this list — its token assertions use
+  the sweep's self-excluding `@[@]` form.
 - After `init.ps1`: only **content tokens** remain (in CLAUDE.md, README.md, `.docs/`)
   plus the literal tokens in `.docs/05-reference/conventions.md`'s token table —
   `init.ps1` deliberately skips this file so the documentation survives the fill.

@@ -23,7 +23,8 @@ _require-pester:
 
 # Each Describe copies the skeleton to a fresh %TEMP% folder and runs init.ps1 there —
 # the working tree is never scaffolded, and temp copies are cleaned up afterwards.
-# Run the Pester suite (tests/init.Tests.ps1): two full scaffolds + the re-run guard.
+# Run the Pester suite (tests/init.Tests.ps1): a full scaffold of every stack in stacks/,
+# the re-run guard, and the failure paths (-FreshGit, missing value, missing stacks/).
 test: _require-pester
     pwsh -NoProfile -Command '$c = New-PesterConfiguration; $c.Run.Path = ''tests''; $c.Run.Exit = $true; $c.Output.Verbosity = ''Detailed''; Invoke-Pester -Configuration $c'
 

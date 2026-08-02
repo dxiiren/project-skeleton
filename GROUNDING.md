@@ -21,12 +21,22 @@ invariants, the token system, the per-stack boot-verify bar, and the git rules.
 
 Step 1's observable behavior is **locked by a Pester suite**: `tests/init.Tests.ps1`
 (run `just test` in the un-initialized skeleton; needs Pester 5+ visible to `pwsh`).
-It scaffolds throwaway `%TEMP%` copies for a server stack (static) and a CLI stack
-(cli-java) and asserts every step — stack files at root, mechanical tokens filled,
-templates promoted, scaffolding removed, gitignore merged, content tokens preserved,
-`conventions.md` fill-skip — plus the already-scaffolded re-run guard (refuses, exit 1).
-If you change what `init.ps1` observably does, update the suite in the SAME commit and
-keep it green. A scaffolded project inherits none of this: init removes
+It scaffolds a throwaway `%TEMP%` copy for **every stack in `stacks/`** and asserts:
+
+- the shared steps, in full for a server stack (static) and a CLI stack (cli-java) —
+  stack files at root, templates promoted, scaffolding removed, gitignore merged,
+  content tokens preserved, `conventions.md` fill-skip;
+- the per-stack token fill, one Describe per remaining stack from the `$stackMatrix`
+  table — zero mechanical tokens left in the stack's `justfile`/`setup.ps1`, and every
+  token that stack owns carrying the value actually passed;
+- the failure paths — the already-scaffolded re-run guard, a missing required value,
+  a missing `stacks/` folder (all exit 1), and `-FreshGit` producing a repo on `main`.
+
+**Adding a stack means adding its `$stackMatrix` row in the same commit** — one row of
+arguments plus the regexes proving its own tokens got filled. Likewise, if you change
+what `init.ps1` observably does, update the suite in the SAME commit and keep it green.
+Never drive an invalid `-Stack` from a test: that prompt loops on a bad answer and
+would hang the suite. A scaffolded project inherits none of this: init removes
 `tests\init.Tests.ps1` during cleanup and the dev justfile is overwritten by the
 stack's justfile.
 

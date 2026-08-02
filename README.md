@@ -81,19 +81,23 @@ just test
 
 `tests/init.Tests.ps1` copies the whole skeleton into a fresh `%TEMP%` folder per
 Describe and runs `init.ps1` there — the working tree is never scaffolded, and temp
-copies are deleted afterwards. It covers two full scaffolds (`static` with
-Port/Docroot, `cli-java` with MainClass) plus the negative path:
+copies are deleted afterwards. It scaffolds **all 9 stacks** and covers:
 
-- `justfile` + `setup.ps1` land at the root with **zero** mechanical tokens; Port,
-  Title, Docroot and MainClass values are actually wired in.
-- `CLAUDE.md`/`README.md` are created from the templates; `GROUNDING.md` and the
-  stack's `NOTES.md` move into `.docs/05-reference/`.
-- The scaffolding removes itself: `stacks/`, `init.ps1`, `gitignore-block.txt`, and
-  the skeleton's own `tests/` suite.
-- The gitignore block is merged; **content** tokens (`WHAT_IT_IS`, ...) survive for
+- **Shared scaffold steps** (asserted in full for `static` and `cli-java`):
+  `CLAUDE.md`/`README.md` are created from the templates; `GROUNDING.md` and the
+  stack's `NOTES.md` move into `.docs/05-reference/`; the scaffolding removes itself
+  (`stacks/`, `init.ps1`, `gitignore-block.txt`, the skeleton's own `tests/`); the
+  gitignore block is merged; **content** tokens (`WHAT_IT_IS`, ...) survive for
   `/ground-project`, and `conventions.md`'s token table is skipped by the fill.
-- Re-running init on an already-scaffolded copy **refuses** (exit 1) and leaves the
-  project untouched.
+- **Per-stack token fill** (every stack, driven by the `$stackMatrix` table): the
+  stack's `justfile` + `setup.ps1` land at the root with **zero** mechanical tokens,
+  and each of that stack's own tokens carries the value actually passed — Port, Title,
+  Docroot, MainClass, Src, RepoSlug, and the hardcoded `8.4` / `vs17` PHP pair.
+- **Failure paths:** re-running init on an already-scaffolded copy **refuses**
+  (exit 1) and leaves the project untouched; a missing required value
+  (`cli-java` with no MainClass, `cli-cpp` with no Src) exits 1 before touching
+  anything; a missing `stacks/` folder exits 1; `-FreshGit` leaves a `.git` repo on
+  branch `main`.
 
 Requirement: Pester 5+ visible to `pwsh` (the Windows-inbox Pester 3 can't run it):
 
@@ -115,6 +119,8 @@ what init observably does, update the suite in the same commit.
 4. If the stack needs an input beyond Name/Port, map it onto an existing token
    (`MAIN_CLASS` / `SRC` / `DOCROOT` — see the vbnet mapping in `stacks/vbnet/NOTES.md`)
    and add the stack to the matching prompt list in `init.ps1`.
-5. Prove it: run `.\init.ps1` against a copy, `just --list`, `pwsh ./setup.ps1`, and the
-   stack's boot-verify before pushing — and `just test` must stay green (add a Describe
-   for the new stack if it introduces a new input/token mapping).
+5. Add the stack's row to `$stackMatrix` in `tests/init.Tests.ps1` — the arguments to
+   scaffold it with, plus one regex per token it owns proving the passed value landed.
+   Every stack has a row; a stack without one is untested.
+6. Prove it: run `.\init.ps1` against a copy, `just --list`, `pwsh ./setup.ps1`, and the
+   stack's boot-verify before pushing — and `just test` must stay green.

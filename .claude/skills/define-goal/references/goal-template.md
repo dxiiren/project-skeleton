@@ -137,6 +137,50 @@ grep/glob/a structured scan of the sources.} Append one row per item found; set 
 - Set a row to `IN-PROGRESS` the moment you start it, so a resumed run knows where you died.
 - After EVERY item (not in batches): set its status + append one Run Log line.
 
+## Durable state ledger
+
+<!-- Machine-readable twin of the Run Log. A cold session must be able to resume from THIS alone. -->
+
+- After EVERY iteration, append exactly ONE JSON line to
+  `.claude/checklist/{topic}/{topic}-state.jsonl` - one object per line, appended, never rewritten.
+- Each line carries: `iteration` (the number); `hypothesis` (what this iteration was testing);
+  `action` (what you did); `command` (the exact command you ran, verbatim); `result` (its raw
+  output / exit code - trimmed, never paraphrased); `criteria` (every exit criterion you checked,
+  each marked `pass` or `fail`).
+- On startup, READ this file FIRST - before any other work - and resume from its last line.
+- Assume the reader has lost everything: a fresh session with zero context must be able to continue
+  from this file alone. This exists because a long autonomous run has died with its parent process
+  before and had to restart from zero.
+
+```text
+{"iteration":3,"hypothesis":"...","action":"...","command":"...","result":"...","criteria":{"G1":"fail"}}
+```
+
+## Stall detection
+
+- If TWO consecutive iterations produce no measurable movement on any exit criterion, STOP looping.
+- Movement = a criterion flipped `fail` -> `pass`, or its blocker changed into a different, more
+  specific one. A new theory, a re-read file, or the same command run again is NOT movement.
+- On the second stalled iteration, write a `BLOCKED` entry naming the exact wall - the literal error
+  text, the environment constraint, or the missing credential. Name it; do not summarize it.
+- Do NOT thrash. Burning dozens of exploratory commands without converging is the failure mode this
+  rule exists to cut off - one named wall is worth more than twenty more probes.
+
+## Morning briefing
+
+On completion - or when the run's budget is exhausted - produce a briefing with three STRICTLY
+separated sections. Never blend them:
+
+- **PROVEN DONE** - each met criterion + the actual command output that proves it (pasted, not
+  described).
+- **NOT DONE** - each unmet criterion + its specific blocker (the literal error / constraint).
+- **DECISIONS I MADE FOR YOU** - every judgment call the developer might want to override: an
+  approach picked over another, a rename, a skipped edge case, an assumption you had to make.
+
+Never mark a criterion met from reasoning. A criterion is met ONLY from a verification command's
+real exit code and output - if you didn't run it, it goes under NOT DONE. The briefing is an
+output, never a permission to stop early: the STOP CONDITION still governs when the run may end.
+
 ## Run Log (append-only - one timestamped line per item)
 
 <!-- format: "- {YYYY-MM-DD HH:MM} | {item id} | {what happened + evidence}" -->

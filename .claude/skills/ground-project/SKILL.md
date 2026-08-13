@@ -68,7 +68,7 @@ legitimately mention the marker):
 grep -rn "GROUND:" .claude/skills/ --exclude-dir=ground-project
 ```
 
-Resolve every `[GROUND: ...]` in the 10 core skills with THIS project's facts — worked
+Resolve every `[GROUND: ...]` in the 12 core skills with THIS project's facts — worked
 examples, scope tables, verification commands, checklist rows. Keep each SKILL.md's
 structure and flow intact (they are battle-tested); you are localizing content, not
 redesigning. In particular:
@@ -77,8 +77,15 @@ redesigning. In particular:
   pre-commit framework unless the project already has one).
 - **create-pr / pre-pr-review / lint-check** — real verification commands (`just ...`,
   probe URL or build-run), a stack-appropriate review checklist, the real quality layers.
+- **verify-before-claim** — how THIS project is started and exercised for live evidence:
+  the start command plus its readiness check (or the build + run pair for a CLI stack with
+  no server), the exact local app URL and the routes that exercise changed behaviour, the
+  stop command plus the orphaned-process check, how to reach the data store (or "no data
+  store"), and this repo's source globs for the missed-call-path sweep.
 - **define-goal (+ references) / claude-transfer / llm-transfer** — bootstrap commands,
   evidence examples, personas, and the worked examples rewritten around this repo.
+- **setup-just** — the real recipe table read off this project's root `justfile`, and the
+  cheapest safe recipe to smoke-test after install (never a long-running or destructive one).
 - **setup-mcp / test-all-mcp** — registry purposes and check prompts already carry the
   repo slug/port from init; verify they read correctly for this stack (e.g. the
   playwright check's target URL, or "no server" for CLI stacks).

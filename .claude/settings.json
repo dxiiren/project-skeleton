@@ -33,9 +33,36 @@
       "Bash(git push --force*)",
       "Bash(git push -f *)",
       "Bash(rm -rf /*)",
-      "mcp__github__delete_file",
-      "mcp__github__merge_pull_request"
+      "mcp__github__delete_file"
     ]
   },
-  "enabledMcpjsonServers": ["context7", "playwright"]
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'gh auth status || echo \"WARN: gh not authenticated - CI monitoring will be blind\"'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; cd \"$ROOT\" || exit 0; git diff --name-only | grep -qE \"\\.(java|ts|tsx|svelte)$\" && echo \"Reminder: prove it against the running system, not mocks\"; exit 0'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "context7",
+    "playwright"
+  ]
 }

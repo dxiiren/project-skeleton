@@ -47,7 +47,7 @@
 Development skills live in `.claude/skills/` — check `.claude/skills/README.md` for the catalog
 and **follow the relevant skill before writing code**. Notables: `/commit`, `/create-pr`,
 `/pre-pr-review`, `/lint-check`, `/claude-transfer`, `/llm-transfer`, `/define-goal`,
-`/setup-mcp`, `/test-all-mcp`, `/audit-skills`.
+`/setup-mcp`, `/test-all-mcp`, `/audit-skills`, `/setup-just`.
 
 ## MCP Servers
 
@@ -68,3 +68,42 @@ Lightweight, single-developer, file-based project memory at `.claude/memory/`:
   index hook is relevant.
 - After writing a fact file, add its one-line pointer to `MEMORY.md`. Update rather than
   duplicate; delete a memory that turns out wrong. Don't store what the repo already records.
+
+## Verification Rules
+
+- A change is UNPROVEN until it has been exercised against the actually-running system: a live
+  browser / Playwright run, a real HTTP call, a real login, or the real deployed environment.
+- These do NOT count as verification: mocked unit tests, `git log` greps, a green build, or "the
+  deployment is present".
+- If verification is blocked (VPN down, host unreachable, auth failing), say so explicitly and mark
+  the item **UNVERIFIED**. Never report success you could not prove.
+
+## Source of Truth
+
+- Check live state BEFORE reading documentation: query the actual DB, the actual running
+  container/service, and the branch that is actually deployed. Repo docs and migration notes go
+  stale.
+
+## Autonomy & Merging
+
+- I have admin access via the Gitea/GitHub API. Do not stall on branch protection, approvals, or
+  "which branch should I use" — pick the safe default (a new worktree off the target branch), state
+  the choice in one line, and proceed.
+- Ask ONLY when the action is destructive and irreversible: force-push, branch or repo deletion,
+  history rewrite on a protected branch, or DDL/writes on a shared database.
+
+## Output Style
+
+- Lead with a one-line summary, then short numbered sections.
+- Keep findings and analysis OUT of dense multi-column tables. Tables are for tabular DATA (report
+  grids, status matrices) — never for burying conclusions the reader must act on.
+- Use mermaid for flows, and a table of contents for any document over ~100 lines.
+
+## Windows/Env Gotchas
+
+- Prefix git commands taking a `<rev>:<path>` argument with `MSYS_NO_PATHCONV=1` — Git Bash mangles
+  the path half otherwise.
+- Use `plink -batch`, or pre-accept the host key, before any SSH automation. An interactive
+  host-key prompt hangs the run.
+- Never hardcode `$HOME\Downloads` or any personal path in a script handed to teammates. Test every
+  copy-paste one-liner before documenting it.

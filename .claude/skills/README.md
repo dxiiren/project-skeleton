@@ -16,6 +16,12 @@ Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
 | [ground-project](ground-project/SKILL.md)   | One-time grounding pass after `init.ps1`: fills content tokens, grounds skills in the real code, enables optional skills, audits, and boot-verifies. | opus  |
 
+## Toolchain
+
+| Skill                             | What it does                                                                                                             | Model  |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
+| [setup-just](setup-just/SKILL.md) | Install the `just` command runner, fix the Windows winget PATH gap, and verify this repo's recipes list and run.         | sonnet |
+
 ## Git
 
 | Skill                           | What it does                                                                                                                                                             | Model  |
@@ -25,10 +31,11 @@ Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 
 ## Quality & Review
 
-| Skill                                   | What it does                                                                                                                             | Model  |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| [pre-pr-review](pre-pr-review/SKILL.md) | Self-review the branch diff against this project's stack checklist + a boot check; report to `workspace/reports/pr/`.                    | opus   |
-| [lint-check](lint-check/SKILL.md)       | Run this project's quality layers (stack gate, kit-placeholder grep, debug-leftover grep); report pass/fail per layer.                   | sonnet |
+| Skill                                               | What it does                                                                                                                    | Model  |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| [verify-before-claim](verify-before-claim/SKILL.md) | Spawn a fresh adversarial verifier subagent that must prove the change works with live evidence before anything is called done. | opus   |
+| [pre-pr-review](pre-pr-review/SKILL.md)             | Self-review the branch diff against this project's stack checklist + a boot check; report to `workspace/reports/pr/`.           | opus   |
+| [lint-check](lint-check/SKILL.md)                   | Run this project's quality layers (stack gate, kit-placeholder grep, debug-leftover grep); report pass/fail per layer.          | sonnet |
 
 ## MCP tooling
 

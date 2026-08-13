@@ -86,7 +86,7 @@ Lightweight, single-developer, file-based project memory at `.claude/memory/`:
 
 ## Autonomy & Merging
 
-- I have admin access via the Gitea/GitHub API. Do not stall on branch protection, approvals, or
+- I have admin access via the GitHub API. Do not stall on branch protection, approvals, or
   "which branch should I use" — pick the safe default (a new worktree off the target branch), state
   the choice in one line, and proceed.
 - Ask ONLY when the action is destructive and irreversible: force-push, branch or repo deletion,

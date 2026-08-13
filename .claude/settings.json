@@ -54,8 +54,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; cd \"$ROOT\" || exit 0; git diff --name-only | grep -qE \"\\.(java|ts|tsx|svelte)$\" && echo \"Reminder: prove it against the running system, not mocks\"; exit 0'",
-            "timeout": 10
+            "command": "bash -c 'ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; cd \"$ROOT\" || exit 0; uv run --no-project python .claude/hooks/live-proof-reminder.py'",
+            "timeout": 15
           }
         ]
       }

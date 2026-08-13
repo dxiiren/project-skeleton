@@ -131,8 +131,24 @@ grep/glob/a structured scan of the sources.} Append one row per item found; set 
 
 ## Resume protocol
 
-- Statuses in this file are the single source of truth - not conversation memory.
-- On every (re)start, crash, or context compaction: re-read STOP CONDITION -> Work List -> continue
+<!-- 🚨 THREE selectors exist in this template. This is the tie-break. Do not remove it. -->
+
+**Precedence, highest first — when they disagree, the higher one wins:**
+
+1. **The ledger** (`{topic}-state.jsonl`) — the set of completed `item`s. It is append-only and
+   written *after* work completes, so it cannot claim something finished that was not.
+2. **Work List statuses** in this file — a human-readable mirror. A row can be left `IN-PROGRESS` by
+   a process that died mid-item, so it can be WRONG in both directions.
+3. **The STOP CONDITION's "topmost non-terminal row"** — a stopping rule, not a work selector. It
+   decides *whether you may stop*, never *what to do next*.
+
+Concretely: compute `next = WorkList − {every item in the ledger}`. If a row says `DONE` but is
+absent from the ledger, **redo it** (the status was written before the ledger line, and the run may
+have died between). If a row says `TODO` but IS in the ledger, **skip it** and correct the status.
+
+- Statuses in this file are a mirror of the ledger — not conversation memory, and not authoritative
+  over it.
+- On every (re)start, crash, or context compaction: re-read STOP CONDITION → Work List → continue
   from the first non-terminal row.
 - Set a row to `IN-PROGRESS` the moment you start it, so a resumed run knows where you died.
 - After EVERY item (not in batches): set its status + append one Run Log line.
@@ -177,10 +193,11 @@ work. If you are not confident the ledger records an `item` per line, run serial
 
 - After EVERY iteration, append exactly ONE JSON line to
   `.claude/checklist/{topic}/{topic}-state.jsonl` - one object per line, appended, never rewritten.
-- Each line carries: `iteration` (the number); `hypothesis` (what this iteration was testing);
-  `action` (what you did); `command` (the exact command you ran, verbatim); `result` (its raw
-  output / exit code - trimmed, never paraphrased); `criteria` (every exit criterion you checked,
-  each marked `pass` or `fail`).
+- Each line carries: `iteration` (the number); **`item`** (the Work-List row this line completed -
+  its id or slug, and the field the SET-based resume reads); `hypothesis` (what this iteration was
+  testing); `action` (what you did); `command` (the exact command you ran, verbatim); `result` (its
+  raw output / exit code - trimmed, never paraphrased); `criteria` (every exit criterion you
+  checked, each marked `pass` or `fail`).
 - On startup, READ this file FIRST - before any other work.
 - **🚨 Resume by SET, never by cursor.** Read the WHOLE ledger, collect every `item` seen, and work
   the complement against the Work List. Do NOT "continue from the last line" — that assumes items

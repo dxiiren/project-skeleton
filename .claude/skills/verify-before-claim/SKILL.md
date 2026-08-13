@@ -141,6 +141,18 @@ change UNVERIFIED. That is the honest outcome, not a failure of the protocol.
 
 ---
 
+## The verifier fans out — do not plan its probes
+
+It splits the requirement into independent probes — *is it actually installed in every
+layer that governs the session? · positive path · negative path · edge cases (untracked /
+staged / empty / one-row / short values) · reach* — and dispatches them as concurrent
+subagents, then decides the verdict itself from their raw evidence. Helpers gather
+evidence; only the verifier votes.
+
+So hand it the requirement and the changed-file list and let it plan its own coverage. Do
+not pre-split the work, do not spawn your own helpers alongside it, and do not narrow its
+scope to the part you think is risky. A serial verification of a real change took about 12
+minutes and 40 tool calls; the fan-out exists to cut that, never to lower the bar of proof.
 ## Anti-patterns
 
 - **Never** tell the verifier what you changed or why — that is the one input that

@@ -33,6 +33,11 @@ One file: `.claude/checklist/{topic}/{topic}-goal.md`, built from the exact temp
 [`references/goal-template.md`](references/goal-template.md). Then you print the `/goal` invocation
 that runs it. You do **not** run the goal yourself - that happens in a separate instance.
 
+The running goal writes a **companion** beside it: `.claude/checklist/{topic}/{topic}-state.jsonl`,
+one line per iteration. That file - not the conversation - is what a fresh instance resumes from
+after a crash, so the goal file must define what each line records and what counts as movement.
+You author the goal file; `/goal` creates the ledger on its first iteration.
+
 ## The golden rule
 
 **Do NOT write the file until the developer has EXPLICITLY confirmed the assembled spec is 100%
@@ -82,6 +87,14 @@ answer, drill in where an answer is vague. The per-type probes and the answer->s
 6. **Resources** - reference files/paths, skills to follow (`/skill-name`), and where work artifacts
    - reports go.
 
+7. **Durability & budget** — mandatory for unattended runs, worth asking on every goal. What is the
+   **hard budget**: max iterations AND max wall-clock? What counts as **measurable movement** on a
+   criterion, so the stall detector can tell real progress from thrashing? Who reads the **morning
+   briefing**, and where does it land? These three answers fill the goal file's `Durable state
+   ledger`, `Stall detection` and `Morning briefing` sections. The template ships those headings, so
+   an un-interrogated goal produces them **empty** — headings with nothing behind them, which is
+   worse than absent because it reads as covered. A goal with no budget has no ceiling except the
+   stall detector, and a loop making tiny movement never trips it.
 ### C. Reflect & confirm loop (the questionnaire that doesn't stop early)
 
 Echo the **entire** assembled spec back as a structured summary (every template section, filled).
@@ -141,7 +154,11 @@ Five pillars, distilled from a real overnight failure and its fix:
 - Allowing "deferred" / "next session" as a status, or permitting a summary while rows are open.
 - A blocker defined by vibes instead of a code fact.
 - No resume protocol -> a compaction mid-run silently loses the place and the agent re-guesses.
-- Naming the file `goal.md` or `{skill}-goal.md` instead of a topic slug.
+- **Shipping the durability sections empty.** The template carries `Durable state ledger`, `Stall
+  detection` and `Morning briefing` headings; if theme 7 was never interrogated they arrive with
+  nothing behind them. Empty headings are worse than absent ones — they read as covered.
+- **No hard budget** (max iterations AND max wall-clock). Stall detection only fires on *zero*
+  movement, so a run making tiny movement per iteration never trips it and runs until morning.- Naming the file `goal.md` or `{skill}-goal.md` instead of a topic slug.
 
 ## References
 

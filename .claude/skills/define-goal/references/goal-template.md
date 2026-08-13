@@ -137,6 +137,17 @@ grep/glob/a structured scan of the sources.} Append one row per item found; set 
 - Set a row to `IN-PROGRESS` the moment you start it, so a resumed run knows where you died.
 - After EVERY item (not in batches): set its status + append one Run Log line.
 
+## Hard budget
+
+<!-- Fill BOTH numbers. An unattended run with no ceiling runs until someone wakes up. -->
+
+- **Max iterations:** `{N}` — count every loop pass in the ledger's `iteration` field.
+- **Max wall-clock:** `{H}h` from the first ledger line's timestamp.
+- On hitting EITHER ceiling: stop immediately, write the Morning briefing from whatever the ledger
+  holds, and mark every unmet criterion `NOT DONE` with its blocker. Do **not** grant yourself an
+  extension, and do not start one more iteration "to finish cleanly".
+- This exists because stall detection only fires on **zero** movement across two iterations. A run
+  that makes a little movement every pass never trips it and will burn the whole night.
 ## Durable state ledger
 
 <!-- Machine-readable twin of the Run Log. A cold session must be able to resume from THIS alone. -->

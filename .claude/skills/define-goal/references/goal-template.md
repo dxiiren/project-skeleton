@@ -148,6 +148,29 @@ grep/glob/a structured scan of the sources.} Append one row per item found; set 
   extension, and do not start one more iteration "to finish cleanly".
 - This exists because stall detection only fires on **zero** movement across two iterations. A run
   that makes a little movement every pass never trips it and will burn the whole night.
+## Concurrency
+
+<!-- Fill this in. "Serial" is a valid answer, but it must be a DECISION, not an omission. -->
+
+- **Mode:** `serial` | `parallel, batch of {N}`
+- **Why:** {what forces the choice — see below}
+
+Items may run **in parallel** only when they are genuinely independent. Serialize when any of these
+is true, and say which one:
+
+- two items touch the **same file** (they will conflict — shard by file, never by rule)
+- they share a **single stateful resource**: one dev/test server, one port, one DB row-range
+- one item's output is another's input
+- the work mutates shared infrastructure (migrations, deploys, branch state)
+
+When parallel: dispatch as **multiple Agent tool calls in a single message**, batch of `{N}`
+(4-8 is the useful range), each subagent scoped to its own item and forbidden from touching another
+item's files. Each subagent appends its OWN ledger line on completion.
+
+**🚨 Parallel REQUIRES the set-based resume below.** Concurrent items finish out of order, so the
+last ledger line is not the high-water mark. A cursor-based resume plus parallelism silently skips
+work. If you are not confident the ledger records an `item` per line, run serial.
+
 ## Durable state ledger
 
 <!-- Machine-readable twin of the Run Log. A cold session must be able to resume from THIS alone. -->
@@ -158,13 +181,18 @@ grep/glob/a structured scan of the sources.} Append one row per item found; set 
   `action` (what you did); `command` (the exact command you ran, verbatim); `result` (its raw
   output / exit code - trimmed, never paraphrased); `criteria` (every exit criterion you checked,
   each marked `pass` or `fail`).
-- On startup, READ this file FIRST - before any other work - and resume from its last line.
+- On startup, READ this file FIRST - before any other work.
+- **🚨 Resume by SET, never by cursor.** Read the WHOLE ledger, collect every `item` seen, and work
+  the complement against the Work List. Do NOT "continue from the last line" — that assumes items
+  completed in order, false the moment anything runs concurrently, and fragile even serially (a torn
+  final write, a duplicated line). Every ledger line MUST therefore carry an `item` field naming the
+  Work-List row it completed.
 - Assume the reader has lost everything: a fresh session with zero context must be able to continue
   from this file alone. This exists because a long autonomous run has died with its parent process
   before and had to restart from zero.
 
 ```text
-{"iteration":3,"hypothesis":"...","action":"...","command":"...","result":"...","criteria":{"G1":"fail"}}
+{"iteration":3,"item":"{work-list id}","hypothesis":"...","action":"...","command":"...","result":"...","criteria":{"G1":"fail"}}
 ```
 
 ## Stall detection

@@ -49,8 +49,14 @@ Ask these regardless of type:
     detector compares two consecutive iterations against, so a vague answer disables it.
 11. **Morning briefing** — who reads it, and where does it land? What would they need to see to
     decide the run was worth it — and to override a judgment call it made at 3am?
+12. **Concurrency** — can the work-list items run at the SAME time, or must they be serial? Probe
+    for what would collide: two items touching the same file · a single shared server / port / DB ·
+    one item's output feeding another. Serial is a fine answer but must be a DECISION with a named
+    reason. If parallel: batch size, and what each subagent is forbidden from touching.
+    **Coupled to the ledger:** parallel items finish OUT OF ORDER, so the goal file must record an
+    `item` per ledger line and resume by SET. If that cannot be guaranteed, the answer is serial.
 
-Probes 9-11 fill the goal file's `Hard budget`, `Durable state ledger`, `Stall detection` and
+Probes 9-12 fill the goal file's `Hard budget`, `Durable state ledger`, `Stall detection` and
 `Morning briefing` sections. The template ships those headings unconditionally, so skipping these
 probes produces **empty headings** — which read as covered and are worse than absent.
 
@@ -124,3 +130,4 @@ After assembling the full spec, present it back in full (every template section,
 | Max iterations + max wall-clock (probe 9)              | **Hard budget**                                                                                 |
 | What counts as measurable movement (probe 10)          | **Stall detection** + the `criteria` field of each **Durable state ledger** line                |
 | Who reads the briefing + where it lands (probe 11)     | **Morning briefing**                                                                            |
+| Serial vs parallel + batch size + collisions (probe 12) | **Concurrency** — and forces the ledger's per-line `item` field |

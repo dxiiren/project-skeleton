@@ -36,7 +36,7 @@ SHARPENED
 Objective : <one line - the outcome, not the activity>
 Done when : <the specific evidence that will be pasted. Live, not inferred.>
 Not doing : <the adjacent thing I am deliberately leaving alone>
-Shape     : <inline | subagent fan-out | checkpointed batch>  (why, 4 words)
+Shape     : <inline | subagent, report-only | checkpointed batch | codify it>  (why, 4 words)
 Assumed   : <the ambiguity I resolved, and which way I resolved it>
 ```
 

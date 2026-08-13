@@ -41,6 +41,18 @@ Ask these regardless of type:
 7. What must it read/follow - reference files, `/skill-name` playbooks - and where do artifacts +
    reports go?
 8. Any decisions already locked that it must **not** reopen?
+9. **Hard budget** — what is the max number of iterations, AND the max wall-clock? Both, as numbers.
+   ("Until it's done" is not an answer; an unattended run with no ceiling runs until someone wakes
+   up. Stall detection only fires on ZERO movement, so a run inching forward never trips it.)
+10. **Measurable movement** — for THIS goal, what counts as an iteration having moved a criterion?
+    (A row changing status? A test count rising? A new file written?) This is what the stall
+    detector compares two consecutive iterations against, so a vague answer disables it.
+11. **Morning briefing** — who reads it, and where does it land? What would they need to see to
+    decide the run was worth it — and to override a judgment call it made at 3am?
+
+Probes 9-11 fill the goal file's `Hard budget`, `Durable state ledger`, `Stall detection` and
+`Morning briefing` sections. The template ships those headings unconditionally, so skipping these
+probes produces **empty headings** — which read as covered and are worse than absent.
 
 ## Per-goal-type question banks
 
@@ -109,3 +121,6 @@ After assembling the full spec, present it back in full (every template section,
 | Real-blocker (code fact) vs banned excuse              | **What counts as a REAL blocker**                                                               |
 | Reference files / skills / output paths                | woven into **Mission**, **Environment bootstrap**, **guardrails**, and per-item DoD as relevant |
 | Where progress is tracked                              | **Resume protocol** + **Run Log**                                                               |
+| Max iterations + max wall-clock (probe 9)              | **Hard budget**                                                                                 |
+| What counts as measurable movement (probe 10)          | **Stall detection** + the `criteria` field of each **Durable state ledger** line                |
+| Who reads the briefing + where it lands (probe 11)     | **Morning briefing**                                                                            |

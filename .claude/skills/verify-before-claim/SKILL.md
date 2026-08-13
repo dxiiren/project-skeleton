@@ -149,6 +149,13 @@ staged / empty / one-row / short values) · reach* — and dispatches them as co
 subagents, then decides the verdict itself from their raw evidence. Helpers gather
 evidence; only the verifier votes.
 
+**🚨 Two operational facts about the verifier agent, proven 13-8-2026:**
+
+1. **Agent definitions load at SESSION START.** Editing the agent file mid-session has no effect on
+   that session - both of that day's runs executed serially (759s, 904s) because the fan-out was
+   added between them. Runtime speed of the fan-out is still **UNMEASURED**.
+2. **A user-scope copy is a separate file, not a link.** Editing one silently leaves the other
+   stale. Change the repo copy and re-copy it in the same turn.
 So hand it the requirement and the changed-file list and let it plan its own coverage. Do
 not pre-split the work, do not spawn your own helpers alongside it, and do not narrow its
 scope to the part you think is risky. A serial verification of a real change took about 12

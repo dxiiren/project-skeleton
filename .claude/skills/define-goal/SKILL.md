@@ -95,6 +95,14 @@ answer, drill in where an answer is vague. The per-type probes and the answer->s
    an un-interrogated goal produces them **empty** — headings with nothing behind them, which is
    worse than absent because it reads as covered. A goal with no budget has no ceiling except the
    stall detector, and a loop making tiny movement never trips it.
+8. **Concurrency** — can the work-list items run **at the same time**, or must they be serial? Ask
+   what would collide: two items touching the same file · a single shared server/port/DB · one
+   item's output feeding another. Serial is a fine answer, but it must be a *decision* with a named
+   reason, not an omission. If parallel: what batch size, and what is each subagent forbidden from
+   touching? **Coupled to the ledger:** parallel items complete out of order, so the goal file MUST
+   record an `item` per ledger line and resume by SET, not by "the last line". If you cannot
+   guarantee that, the answer is serial.
+
 ### C. Reflect & confirm loop (the questionnaire that doesn't stop early)
 
 Echo the **entire** assembled spec back as a structured summary (every template section, filled).
@@ -168,6 +176,27 @@ Five pillars, distilled from a real overnight failure and its fix:
   banks, the confirm-loop wording, and the answer->template-section map.
 
 ## Evolution Log
+
+
+- **2026-08-13 — RESUME PROVEN, and the durability sections were interrogation-less.** Added the
+  `Hard budget`, `Durable state ledger`, `Stall detection`, `Morning briefing` and `Concurrency`
+  template sections **plus** the probes that fill them (theme 7/8 here, universal probes 9-12 in
+  `interrogation-guide.md`). The template had carried three of those headings for a while with
+  nothing interrogating for their content, so every goal shipped them **empty** — which reads as
+  covered and is worse than absent.
+  **Kill-resume is now evidenced, not asserted** (it had produced zero ledger lines ever). Proof, on
+  the third attempt: headless run A spawned, `SIGKILL`-ed at ledger=8 (last item
+  `audit-workflow-comments`), then a COLD run B given only the same prompt appended lines 9-14 with
+  **zero duplicates**, iterations `0..13` distinct, and a **118-second gap at line 9** proving a real
+  interruption. The first two attempts failed on the human-in-the-loop step, never the mechanism —
+  run 1's evidence was deleted by an early cleanup, run 2's kill missed the window. Driving it with
+  `claude -p ... &` + the captured PID worked first try.
+  **Resume is now SET-based, not cursor-based.** Every ledger line must carry an `item`; resume =
+  work-list minus every `item` seen. A cursor ("continue from the last line") silently skips work the
+  moment anything runs concurrently, so `Concurrency` and the ledger change had to land together.
+  **Still unverified:** `/goal`'s own Stop-evaluator (the proof used headless `claude -p`, which
+  exercises the ledger protocol but not the Stop loop), and the set-based resume under genuinely
+  concurrent execution.
 
 - Shipped with the project-skeleton kit: same interrogation -> confirm-until-100% -> stop-proof
   file design and the five stop-proof pillars proven across the stamped dxiiren repos.

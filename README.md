@@ -2,7 +2,7 @@
 
 Clone-and-go project scaffolder. It stamps any new (or freshly imported) project with the
 full dxiiren onboarding kit — an idempotent `setup.ps1`, a `justfile`, a README, a numbered
-`.docs/` documentation set, and a `.claude/` kit (13 skills, statusline, memory seed, MCP
+`.docs/` documentation set, and a `.claude/` kit (14 skills, statusline, memory seed, MCP
 stub) — in two steps: a mechanical token fill, then an intelligent grounding pass by Claude.
 
 > This README describes the skeleton itself. Running `.\init.ps1` REPLACES it with the

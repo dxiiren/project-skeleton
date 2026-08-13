@@ -54,6 +54,7 @@ Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 
 | Skill                                       | What it does                                                                                                        | Model  |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ |
+| [sharpen-prompt](sharpen-prompt/SKILL.md)   | Rewrite a fuzzy request into a brief with a pasteable definition of done before starting work.                      | opus   |
 | [define-goal](define-goal/SKILL.md)         | Interrogate until a goal is unambiguous, then write a stop-proof `{topic}-goal.md` for the built-in `/goal` runner. | opus   |
 | [claude-transfer](claude-transfer/SKILL.md) | Pointer-based session-handoff brief to `workspace/reports/transfers/claude/`.                                       | sonnet |
 | [llm-transfer](llm-transfer/SKILL.md)       | Self-contained master prompt for an external LLM → `workspace/reports/transfers/{tool}/`.                           | sonnet |

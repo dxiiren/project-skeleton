@@ -68,7 +68,7 @@ legitimately mention the marker):
 grep -rn "GROUND:" .claude/skills/ --exclude-dir=ground-project
 ```
 
-Resolve every `[GROUND: ...]` in the 12 core skills with THIS project's facts — worked
+Resolve every `[GROUND: ...]` in the 13 core skills with THIS project's facts — worked
 examples, scope tables, verification commands, checklist rows. Keep each SKILL.md's
 structure and flow intact (they are battle-tested); you are localizing content, not
 redesigning. In particular:

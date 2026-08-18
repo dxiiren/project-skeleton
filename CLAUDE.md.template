@@ -69,6 +69,75 @@ Lightweight, single-developer, file-based project memory at `.claude/memory/`:
 - After writing a fact file, add its one-line pointer to `MEMORY.md`. Update rather than
   duplicate; delete a memory that turns out wrong. Don't store what the repo already records.
 
+## Workflow Orchestration
+
+### 1. Plan Mode Default
+
+- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions).
+- If something goes sideways, STOP and re-plan immediately — don't keep pushing.
+- Use plan mode for verification steps, not just building.
+- Write detailed specs upfront to reduce ambiguity.
+
+### 2. Subagent Strategy
+
+- Use subagents liberally to keep the main context window clean.
+- Offload research, exploration, and parallel analysis to subagents.
+- For complex problems, throw more compute at it via subagents.
+- One task per subagent for focused execution.
+- Parallelize independent sub-tasks in a SINGLE message with multiple Agent calls; go sequential
+  only when one sub-task's result feeds the next.
+
+### 3. Self-Improvement Loop
+
+- After ANY correction from the developer: capture the *pattern*, not just the instance.
+- Write rules for yourself that prevent the same mistake recurring.
+- Ruthlessly iterate on these lessons until the mistake rate drops.
+- Review lessons at session start — that is what `.claude/memory/MEMORY.md` is loaded for.
+- Persist every correction as a `metadata.type: feedback` memory (see **Memory** above). A
+  correction that only changes the current session is a correction lost.
+
+### 4. Verification Before Done
+
+- The bar is **Verification Rules** below — live evidence only. Never mark a task complete
+  without proving it works.
+- Diff behavior between the base branch and your changes when relevant.
+- Ask yourself: "Would a staff engineer approve this?"
+- Run tests, check logs, demonstrate correctness.
+
+### 5. Demand Elegance (Balanced)
+
+- For non-trivial changes: pause and ask "is there a more elegant way?"
+- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution."
+- Skip this for simple, obvious fixes — don't over-engineer.
+- Challenge your own work before presenting it.
+
+### 6. Autonomous Bug Fixing
+
+- When given a bug report: just fix it. Don't ask for hand-holding.
+- Point at logs, errors, failing tests -> then resolve them.
+- Zero context switching required from the developer.
+- Go fix failing CI tests without being told how.
+
+## Task Management
+
+1. **Plan First**: write the plan as checkable items before implementing.
+2. **Verify Plan**: check in before starting implementation.
+3. **Track Progress**: mark items complete as you go.
+4. **Explain Changes**: high-level summary at each step.
+5. **Document Results**: add a review section when the work is done.
+6. **Capture Lessons**: persist the correction after any course-change.
+
+Run these on the machinery this skeleton already ships — `TodoWrite` for in-session tracking,
+`.claude/checklist/{topic}/` (via `/define-goal`) for durable multi-session plans, and
+`.claude/memory/` for step 6. Do NOT introduce a parallel `tasks/todo.md`; a second tracker that
+nothing reads is worse than none.
+
+## Core Principles
+
+- **Simplicity First**: make every change as simple as possible. Impact minimal code.
+- **No Laziness**: find root causes. No temporary fixes. Senior developer standards.
+- **Minimal Impact**: changes should only touch what's necessary. Avoid introducing bugs.
+
 ## Verification Rules
 
 - A change is UNPROVEN until it has been exercised against the actually-running system: a live

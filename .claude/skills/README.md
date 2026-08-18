@@ -72,3 +72,4 @@ as inert reference — they are not loaded and not audited.
 | fix-typecheck | a typecheck script or `tsconfig.json` exists |
 | fix-phpstan | phpstan/larastan in `composer.json` |
 | update-or-create-docs | always recommended once `.docs/` has real content |
+| audit-pagespeed | the project ships a **web page on a public URL** (PageSpeed cannot reach `localhost`) |

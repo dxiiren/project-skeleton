@@ -101,6 +101,7 @@ For each folder in `.claude/skills-optional/`, check its prerequisite in the rea
 | fix-typecheck | a typecheck script or `tsconfig.json` exists |
 | fix-phpstan | phpstan/larastan in `composer.json` |
 | update-or-create-docs | always recommend once `.docs/` has real content — enable it |
+| audit-pagespeed | the project serves a **web page on a public URL** (PageSpeed cannot reach `localhost`) |
 
 Qualifying skill → **move** its folder into `.claude/skills/`, resolve its
 `[GROUND: ...]` markers, and add its catalog row in `.claude/skills/README.md`.

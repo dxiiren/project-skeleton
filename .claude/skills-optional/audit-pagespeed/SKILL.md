@@ -136,6 +136,17 @@ The other three categories are plain pass/fail sums — clear every failing audi
   a card get edited separately, so one often has it and the other doesn't.
 - **CSP vs. redirects** — `img-src`/`connect-src` must allow the host a URL *redirects to*, not just
   the one you wrote. A blocked redirect logs console errors and costs **Best Practices** points.
+- **Theme/state flip at hydration** — if a pre-paint inline script and the hydration-time store
+  disagree about a default (dark-mode class, locale, anything on `<html>`), hydration mutates the
+  root element and re-styles the entire DOM on every PSI run (PSI always loads with EMPTY storage
+  and a light-preference device). Field measurement: ~800ms of TBT from one theme-class flip.
+  Symptom: huge TBT + a `forced-reflow` insight pointing into a state library. Fix the DEFAULTS to
+  agree so the hydration write is a no-op — not the write mechanism.
+- **LCP may be TEXT, not your hero image** — read the `lcp-breakdown-insight` node before
+  optimising an image. Any element that starts at opacity 0 (entrance animation with a delay, a
+  JS visibility gate) delays LCP by its full delay+fade — measured 2.47s of pure render delay on
+  a tagline. The LCP element gets no entrance animation; animate the rest with CSS `both` fill,
+  never a JS gate (hydration lands ~2s in on Slow 4G).
 
 Project-specific recurring causes: [GROUND: the fixes that actually recur on this stack — the
 image pipeline, the font strategy, the hydration-heavy components, and the CSP location.]
@@ -145,8 +156,12 @@ image pipeline, the font strategy, the hydration-heavy components, and the CSP l
 Re-run Steps 1–2 against the **deployed** URL after the deploy lands, and report before → after per
 category for both form factors.
 
-- PSI is **noisy**: ±3–5 points run to run on mobile. A 2-point move is not a result — re-run before
-  claiming either a win or a regression.
+- PSI is **noisy** — measured on identical code in one session: mobile TBT 40→1,210ms (a VM
+  hiccup), SI 1.4→4.6s. A single run proves nothing in either direction: collect **3+ samples per
+  form factor**, reason from the median, and discard a wild outlier only after the next run
+  contradicts it.
+- PSI **caches**: back-to-back runs returning byte-identical metrics are one analysis served
+  twice. Space samples minutes apart and check `lhr.fetchTime` actually advanced.
 - Verify against the live URL, never a local build. The point of this skill is Google's number on
   the real deployment.
 - If a category is short of 100, **say so and name the remaining audits**. Do not round up, and do

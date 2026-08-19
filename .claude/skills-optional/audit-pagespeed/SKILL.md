@@ -1,13 +1,15 @@
 ---
 name: audit-pagespeed
-description: Use when the developer says 'audit pagespeed', 'run pagespeed', 'check pagespeed insights', 'test on pagespeed.web.dev', 'are we 100', or 'why are we not 100' — drives pagespeed.web.dev with the Playwright MCP, lifts the full Lighthouse JSON for BOTH form factors straight off the page, and turns every failing audit into a source-mapped fix list tied to the metric it actually moves.
+description: Use when the developer says 'audit pagespeed', 'run pagespeed', 'check pagespeed insights', 'test on pagespeed.web.dev', 'are we 100', or 'why are we not 100' — drives pagespeed.web.dev with the Playwright MCP, lifts the full Lighthouse JSON for BOTH form factors straight off the page, and turns every failing audit into a source-mapped fix list tied to the metric it actually moves. Carries the full road-to-100 playbook (dead-weight audit, prototype discipline, variance math, the automated 100-hunt).
 model: opus
 ---
 
 # audit-pagespeed — real PageSpeed Insights scores, with the failing elements
 
 Google's own scoring, on the deployed URL, for **mobile and desktop in one run** — then every
-failing audit resolved down to the file that causes it.
+failing audit resolved down to the file that causes it. This skill also carries the
+**road-to-100 playbook** learned the hard way (a full day, 40+ samples, 4 prototyped levers):
+follow it in order and the next project gets there in hours, not a day.
 
 ## Trigger
 
@@ -26,16 +28,9 @@ failing audit resolved down to the file that causes it.
 ## Step 0 — Do NOT reach for the PSI REST API first
 
 `pagespeedonline.googleapis.com/.../runPagespeed` looks like the clean path. Without an API key it
-runs on a **shared anonymous quota that is usually already exhausted**, and returns:
-
-```json
-{ "error": { "code": 429, "message": "Quota exceeded for quota metric 'Queries' ..." } }
-```
-
-Burning a turn discovering this is the most common way to waste time here. **Drive the web UI
-instead** — no quota, and (Step 2) it hands you the same Lighthouse JSON the API would.
-
-Use the REST API only if the developer has set a real `PAGESPEED_API_KEY`.
+runs on a **shared anonymous quota that is usually already exhausted** (`429 Quota exceeded`).
+**Drive the web UI instead** — no quota, and (Step 2) it hands you the same Lighthouse JSON the API
+would. Use the REST API only if the developer has set a real `PAGESPEED_API_KEY`.
 
 ## Step 1 — Run the analysis
 
@@ -45,17 +40,14 @@ Deep-link straight to the result so no form interaction is needed:
 https://pagespeed.web.dev/analysis?url=<URL-ENCODED-TARGET>&form_factor=mobile
 ```
 
-```js
-mcp__playwright__browser_navigate({ url: 'https://pagespeed.web.dev/analysis?url=<ENCODED>&form_factor=mobile' })
-mcp__playwright__browser_wait_for({ text: 'Performance' })
-```
+Analysis takes **30–60 s**; `wait_for({text:'Performance'})` fires on the page *shell* — too early.
+Wait for real scores. **One run covers both form factors.**
 
-Analysis takes **30–60 s**. `wait_for({text:'Performance'})` returns as soon as the page *shell*
-renders — too early; the body still reads `loading`. Wait ~30 s more, then confirm real scores are
-present before parsing.
-
-> **One run covers both form factors.** PSI analyses mobile *and* desktop and retains both — no
-> second navigation needed for desktop.
+Two Google-side failure modes to expect (seen repeatedly): the desktop lane errors with
+_"failed to retrieve the LHR"_ while mobile succeeds (treat desktop as optional per sample, retry
+later), and whole-service degraded windows (stalls, absurd outliers like a desktop 78 after ten
+100s). When PSI itself is sick, stop sampling and say so — don't diagnose the site with a broken
+ruler.
 
 ## Step 2 — Extract the full Lighthouse JSON (the whole trick)
 
@@ -84,98 +76,156 @@ mcp__playwright__browser_evaluate({ function: `() => {
 }`, filename: 'lhr-both.json' })
 ```
 
-Pass `filename:` so the payload lands in a file instead of flooding the transcript, then parse it
-with a short `node -e` script.
+Pass `filename:` so the payload lands in a file, then parse it with a short `node -e` script.
+`fetchTime` is your freshness proof — PSI caches; identical fetchTime = one analysis served twice.
+Failing a11y/BP items carry a `node` (`selector`, `snippet`, `nodeLabel`) — grep the repo for the
+`nodeLabel` text to land on the source. Read the **whole** report including "unscored" insights:
+they name real causes (a non-composited `text-shadow` animation on the LCP element was found there,
+not in any scored audit).
 
-Items for `color-contrast` / `link-name` / `target-size` carry a `node` with `selector`, `snippet`,
-`nodeLabel`, and an `explanation` naming the measured ratio or pixel size. Grep the repo for the
-`nodeLabel` text to land on the source.
+## Step 3 — The score math, including the 100-point endgame
 
-## Step 3 — Know what actually moves the score
+**Performance = 0.30·TBT + 0.25·LCP + 0.25·CLS + 0.10·FCP + 0.10·SI** (each metric scored 0–1 on a
+log-normal curve, sum ×100). INSIGHTS/DIAGNOSTICS are advisory — tie every fix to the metric it
+moves, or it moved nothing. Never report "fixed 6 diagnostics" as progress.
 
-**The Performance score is a weighted function of five metrics and nothing else:**
+**The endgame arithmetic:** the displayed score rounds the weighted sum, so 100 needs **≥ 99.5**.
+With TBT and CLS at 1.0 (achievable and mandatory), FCP+LCP+SI must average ~0.99. Google's
+calculator (googlechrome.github.io/lighthouse/scorecalc) shows *rounded* metric scores — a run the
+calculator displays as "100" can truly be 99.4x and print 99. Do the math with raw `numericValue`s.
 
-| Metric | Weight |
-|---|---|
-| Total Blocking Time | 30% |
-| Largest Contentful Paint | 25% |
-| Cumulative Layout Shift | 25% |
-| First Contentful Paint | 10% |
-| Speed Index | 10% |
+**Deterministic-ceiling detection — the single most valuable diagnostic:** collect 10+ samples and
+look at the *clean* rolls (low TBT). If a metric repeats the **exact same millisecond value** run
+after run (e.g. LCP = 1876ms thirteen times), that is not variance — it is a structural byte on the
+simulated critical path, and no amount of re-rolling will print 100. Find the bytes (Step 4).
+If clean rolls straddle 99/100 instead, you're at the rounding knife-edge — sample, don't operate.
 
-Everything under **INSIGHTS** and **DIAGNOSTICS** — "Reduce unused JavaScript", "Use efficient cache
-lifetimes", "Improve image delivery", "Minimize main-thread work" — is **advisory**. Lighthouse says
-so itself: *"These numbers don't directly affect the Performance score."* They matter only insofar
-as they move one of the five.
+The other three categories are pass/fail sums — clear every failing audit and they pin at 100.
 
-So **never report "fixed 6 diagnostics" as progress.** Tie every proposed fix to the metric it
-moves, then re-measure. Compute the split to find where the points actually are:
+## Step 4 — AUDIT FOR DEAD WEIGHT FIRST (the day-saver)
 
+**Before optimizing how anything loads, verify it actually renders.** The costliest field lesson: a
+site carried a complete self-hosted web-font pipeline — subset faces, two `<head>` preloads, ~35KB
+on every cold visit — for a font that **never painted a single glyph** (a CSS-framework default
+family utility on a root wrapper had overridden it since day one). That dead weight sat in the
+pre-LCP window and WAS the deterministic mobile-99. Removing it: LCP −500ms, instant quad-100.
+
+Run this on the live page before anything else:
+
+```js
+// In a mobile-emulated Playwright page, after load+3s:
+() => ({
+  lcpFont: getComputedStyle(document.querySelector('<LCP-selector>')).fontFamily,
+  loadedFaces: [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family + ' ' + f.weight),
+  // For EVERY <link rel=preload>: does deleting the asset change any pixel?
+})
 ```
-score ≈ 0.30·TBT + 0.25·LCP + 0.25·CLS + 0.10·FCP + 0.10·SI   (each term 0–1, ×100)
-```
 
-The other three categories are plain pass/fail sums — clear every failing audit and they reach 100.
+- Webfont declared but `document.fonts` empty / computed family is the system stack → the font
+  machinery is 100% dead weight. Delete it (faces, preloads, files). System-ui stacks are a
+  *feature* for PSI: no font transfer, and **no font-swap LCP re-record** (a late web font re-stamps
+  text LCP at swap time — the W3C LCP spec counts the repaint).
+- Audit every `preload`/`modulepreload`/`prefetch` the same way: a hint for a resource not needed
+  before LCP steals LCP bandwidth. SSR frameworks may emit a `modulepreload` per rendered chunk
+  even for lazily-hydrated components — strip non-entry ones at the HTML-render hook; even
+  `rel=prefetch` demotions steal bandwidth on the simulated 1.6Mbps pipe. (Chunk BYTES still
+  download via the module graph — only hydration WORK defers; that is fine and optimal.)
 
-## Step 4 — Fixes that recur, by the metric they move
+## Step 5 — Fixes that recur, by the metric they move
 
-- **Third-party asset CDNs** (icon CDNs, Google Fonts, analytics) — every extra origin is a DNS +
-  TLS round trip on Lighthouse's Slow-4G mobile profile. Self-host into the static dir and serve
-  `immutable, max-age=31536000`. Moves **SI, LCP, FCP** — and it is the *only* way to pass "Use
-  efficient cache lifetimes", since you cannot set a third party's headers.
-- **LCP element** — size the image to what it renders at, add `fetchpriority="high"` plus explicit
-  `width`/`height`, and `rel=preload` it so the fetch starts before the parser reaches the tag.
-- **Client-side carousel / slider / chart libraries** — each instance does a layout pass at
-  hydration, which shows up as a **forced reflow** and is usually the biggest **TBT** lever. Mount
-  below-the-fold ones lazily.
-- **`color-contrast`** — decorative low-opacity text. On a near-black background, white at 50%
-  opacity is roughly the 4.5:1 floor; below that it fails. Compute, don't eyeball.
-- **`target-size`** — tap targets under 24×24 CSS px, or spaced closer than 24 px. Common in
-  carousel pagination dots and icon-only buttons. Keep the dot small, grow the hit area.
-- **`link-name`** — an icon-only `<a>` with no visually-hidden text. Mobile and desktop variants of
-  a card get edited separately, so one often has it and the other doesn't.
-- **CSP vs. redirects** — `img-src`/`connect-src` must allow the host a URL *redirects to*, not just
-  the one you wrote. A blocked redirect logs console errors and costs **Best Practices** points.
-- **Theme/state flip at hydration** — if a pre-paint inline script and the hydration-time store
-  disagree about a default (dark-mode class, locale, anything on `<html>`), hydration mutates the
-  root element and re-styles the entire DOM on every PSI run (PSI always loads with EMPTY storage
-  and a light-preference device). Field measurement: ~800ms of TBT from one theme-class flip.
-  Symptom: huge TBT + a `forced-reflow` insight pointing into a state library. Fix the DEFAULTS to
-  agree so the hydration write is a no-op — not the write mechanism.
-- **LCP may be TEXT, not your hero image** — read the `lcp-breakdown-insight` node before
-  optimising an image. Any element that starts at opacity 0 (entrance animation with a delay, a
-  JS visibility gate) delays LCP by its full delay+fade — measured 2.47s of pure render delay on
-  a tagline. The LCP element gets no entrance animation; animate the rest with CSS `both` fill,
-  never a JS gate (hydration lands ~2s in on Slow 4G).
+- **Theme/state flip at hydration** (~800ms TBT): a pre-paint inline script and the hydration-time
+  store must agree on what EMPTY storage means — PSI always runs empty-storage + light-preference.
+  A mismatch mutates `<html>` and re-styles the whole DOM every run. Fix the DEFAULTS to agree.
+- **LCP element hygiene**: read `lcp-breakdown-insight` to identify it first (it is often TEXT, not
+  the hero image). It must carry **no entrance animation, no JS opacity gate, no animated
+  text-shadow** — any repaint re-records LCP. Animate the rest with CSS `both` fill, never JS gates.
+- **Single-render responsive DOM**: never render mobile+desktop variants twice (`hidden md:block`
+  duplicates). One list: CSS scroll-snap carousel below the breakpoint, grid above. Field result:
+  HTML 367→271KB, DOM 2452→1625, FCP −0.2s.
+- **Third-party origins**: every extra origin = DNS+TLS on Slow 4G. Self-host, `immutable` cache
+  headers, CSP `'self'` — also the only way to pass "efficient cache lifetimes".
+- **LCP image**: preload with `imagesrcset`/`imagesizes` mirroring the `<img>` exactly,
+  `fetchpriority=high`, explicit `width`/`height`, right-sized variants.
+- **Inline critical CSS** (verify what the framework already does): all CSS in the prerendered HTML
+  = zero render-blocking requests. Nuxt 3 inlines by default — PIN IT (`features.inlineStyles:
+  true`; Nuxt 4's granular default un-inlines global CSS). Critters/beasties on an already-inlined
+  page is a regression.
+- **Mobile-DPR raster trap (Best Practices)**: any visible raster image needs natural size ≥
+  displayed CSS px × ~2.6 DPR or `image-size-responsive` fails BP *on mobile only* (a 32px header
+  logo needs ~84px natural — never reuse a favicon as a logo; desktop DPR 1 masks the bug).
+- **Decorative layers**: `pointer-events-none` on every absolute glow/overlay — not a score item,
+  but hit-testable decorations swallow taps and carousel swipes.
+- **Head diet**: JSON-LD to end-of-body, minimal head — bytes before content delay first paint.
+- **`color-contrast` / `target-size` / `link-name`**: compute contrast (white@50% on near-black is
+  the 4.5:1 floor), 24×24 tap targets, `sr-only` text on icon-only links — check BOTH responsive
+  variants of each component.
 
 Project-specific recurring causes: [GROUND: the fixes that actually recur on this stack — the
 image pipeline, the font strategy, the hydration-heavy components, and the CSP location.]
 
-## Step 5 — Re-measure, honestly
+## Step 6 — Prototype discipline (never ship a "should help")
 
-Re-run Steps 1–2 against the **deployed** URL after the deploy lands, and report before → after per
-category for both form factors.
+Every candidate lever gets: an **isolated git worktree**, the change, a functional proof, and an
+**interleaved** Lighthouse A/B (alternate base/proto in ONE loop, 3–4 pairs — sequential rounds get
+confounded by machine drift; it once manufactured a fake 7-point regression). Local runs:
+`npx lighthouse <url> --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=412
+--screenEmulation.height=823 --screenEmulation.deviceScaleFactor=1.75 --throttling-method=simulate`.
+Absolute localhost numbers differ from PSI; the base-vs-proto DELTA is the signal.
 
-- PSI is **noisy** — measured on identical code in one session: mobile TBT 40→1,210ms (a VM
-  hiccup), SI 1.4→4.6s. A single run proves nothing in either direction: collect **3+ samples per
-  form factor**, reason from the median, and discard a wild outlier only after the next run
-  contradicts it.
-- PSI **caches**: back-to-back runs returning byte-identical metrics are one analysis served
-  twice. Space samples minutes apart and check `lhr.fetchTime` actually advanced.
-- Verify against the live URL, never a local build. The point of this skill is Google's number on
-  the real deployment.
-- If a category is short of 100, **say so and name the remaining audits**. Do not round up, and do
-  not present diagnostic fixes as if they were score movement.
+**Lantern's limits:** localhost CAN measure resource-graph changes (add/remove a preload/request —
+trustworthy). It CANNOT measure load-event-relative tricks (locally `load` fires *before* first
+paint, inverting the premise) — those need a preview deploy + PSI.
+
+**Levers measured NEGATIVE on an already-tuned page — do not re-try without new evidence:**
+
+1. **Defer entry JS until `load`** — dead interactions until hydration (e2e caught a dead button);
+   unmeasurable locally; rejected on the UX regression alone.
+2. **`content-visibility: auto` on below-fold sections** — ~0 gain (first paint is network-bound,
+   not layout-bound), +TBT bookkeeping, and fragile per-viewport `contain-intrinsic-size` constants
+   that broke anchor navigation twice.
+3. **Deeper component code-splitting** — +requests/+split overhead contends with hero assets (FCP
+   +192ms/LCP +278ms in every pair). Framework entry JS is a floor; the "unused JavaScript" PSI
+   flags usually lives there and is unreachable without changing frameworks.
+
+## Step 7 — Variance: measure like Google says to
+
+- Google's own docs: a 100 "is extremely challenging **and not expected**"; treat performance as a
+  **distribution**. Only ~zero-JS sites (Qwik/Astro/11ty) hold 100, and even they report 98–100
+  bands. A hydrating-framework site *visits* 100 on clean rolls — that is the win condition.
+- PSI's shared VMs randomly spike TBT (~500ms on runs whose network numbers are pristine → score
+  dips to high-80s). Officially acknowledged in PSI's release notes. Not your code. Judge by the
+  **median of 3–5 fresh samples** (check `fetchTime` advanced), never a single run.
+- PSI tests from 4 Google datacenters picked by the *requester's* IP — a global CDN mostly
+  neutralizes it, but check TTFB on bad runs.
+- Report honestly: before→after medians per category per form factor, named remaining audits,
+  outliers labeled as outliers. Never round up.
+
+## Step 8 — The automated 100-hunt (when the goal is a screenshot of 100)
+
+Once clean rolls compute to ≥99.5, catching the printed 100 is a sampling problem. Automate it:
+
+1. **One-shot sampler script** at the repo root (needs the repo's `node_modules` for
+   `@playwright/test`): headed chromium → the Step-1 deep link → `waitForFunction` for the MOBILE
+   LHR global (desktop optional — its lane fails sporadically) → extract categories + 5 metrics +
+   fetchTime → **screenshot BOTH form-factor tabs** (the proof standard: never claim 100 without
+   the report-page screenshot) → print one `RESULT {json}` line.
+2. **Loop it** (Workflow tool or a burst agent): sequential samples ~4 min apart, fetchTime dedupe,
+   **early-stop when one sample shows the full win condition** (Performance 100 AND a11y/BP/SEO
+   100), 3-consecutive-failure circuit breaker, screenshots kept per sample. Deliver the winning
+   pair immediately.
+3. Between hunts, fix structure (Steps 4–6). A hunt against a deterministic 99 ceiling wastes
+   hours — 24 samples proved it once; the structural fix then swept 100 on the **first** sample.
 
 ## Report format
 
 ```
 | Category       | Mobile    | Desktop   |
 | -------------- | --------- | --------- |
-| Performance    | 91 → 97   | 98 → 100  |
+| Performance    | 91 → 100  | 98 → 100  |
 | Accessibility  | 89 → 100  | 96 → 100  |
 | Best Practices | 100 → 100 | 92 → 100  |
 | SEO            | 100 → 100 | 100 → 100 |
 ```
 
-Then: what changed, which metric each change moved, and **what is still short and why**.
+Then: what changed, which metric each change moved (+ms), screenshot paths for any claimed 100, and
+**what is still short and why**.

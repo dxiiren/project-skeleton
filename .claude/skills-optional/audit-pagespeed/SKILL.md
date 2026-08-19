@@ -8,7 +8,7 @@ model: opus
 
 Google's own scoring, on the deployed URL, for **mobile and desktop in one run** — then every
 failing audit resolved down to the file that causes it. This skill also carries the
-**road-to-100 playbook** learned the hard way (a full day, 40+ samples, 4 prototyped levers):
+**road-to-100 playbook** learned the hard way (a full day, 40+ samples, 11 measured levers):
 follow it in order and the next project gets there in hours, not a day.
 
 ## Trigger
@@ -139,6 +139,11 @@ Run this on the live page before anything else:
 - **LCP element hygiene**: read `lcp-breakdown-insight` to identify it first (it is often TEXT, not
   the hero image). It must carry **no entrance animation, no JS opacity gate, no animated
   text-shadow** — any repaint re-records LCP. Animate the rest with CSS `both` fill, never JS gates.
+  Know the candidate rules: **gradient text (`background-clip: text` + transparent color) is NOT an
+  LCP candidate** — the next-largest plain text is the LCP element, so making a gradient heading
+  bigger/earlier moves nothing (measured: SSR-ing a previously-empty gradient h1 changed LCP by
+  0ms). A residual ~300ms text-LCP-after-FCP gap on Slow 4G is throttled-CPU layout time —
+  structural, not removable by markup tweaks.
 - **Single-render responsive DOM**: never render mobile+desktop variants twice (`hidden md:block`
   duplicates). One list: CSS scroll-snap carousel below the breakpoint, grid above. Field result:
   HTML 367→271KB, DOM 2452→1625, FCP −0.2s.
@@ -170,7 +175,9 @@ Every candidate lever gets: an **isolated git worktree**, the change, a function
 confounded by machine drift; it once manufactured a fake 7-point regression). Local runs:
 `npx lighthouse <url> --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=412
 --screenEmulation.height=823 --screenEmulation.deviceScaleFactor=1.75 --throttling-method=simulate`.
-Absolute localhost numbers differ from PSI; the base-vs-proto DELTA is the signal.
+Absolute localhost numbers differ from PSI; the base-vs-proto DELTA is the signal. **Pre-register
+the deploy bar before measuring** (e.g. "LCP ≥75ms or no ship") and hold to it — don't ship a
+lever that missed its bar because a secondary metric twitched.
 
 **Lantern's limits:** localhost CAN measure resource-graph changes (add/remove a preload/request —
 trustworthy). It CANNOT measure load-event-relative tricks (locally `load` fires *before* first
@@ -186,12 +193,27 @@ paint, inverting the premise) — those need a preview deploy + PSI.
 3. **Deeper component code-splitting** — +requests/+split overhead contends with hero assets (FCP
    +192ms/LCP +278ms in every pair). Framework entry JS is a floor; the "unused JavaScript" PSI
    flags usually lives there and is unreachable without changing frameworks.
+4. **`fetchpriority="low"` on the entry script (+ dropping its modulepreload)** — priority change
+   proven at the network layer (High→Low via CDP), hydration intact, and **LCP moved 0ms**
+   (−6.5ms median over 4 interleaved pairs): entry-fetch bandwidth contention was NOT gating LCP.
+   Side-effect: FCP −82ms in every pair — but that is ~+0.05 unrounded score points, below run
+   noise, and it delays real hydration on slow networks. Failed its pre-registered bar; not shipped.
 
 ## Step 7 — Variance: measure like Google says to
 
 - Google's own docs: a 100 "is extremely challenging **and not expected**"; treat performance as a
   **distribution**. Only ~zero-JS sites (Qwik/Astro/11ty) hold 100, and even they report 98–100
   bands. A hydrating-framework site *visits* 100 on clean rolls — that is the win condition.
+- **Know the mobile FCP floor before promising more:** the Slow-4G simulation charges ~600ms of
+  DNS+TCP+TLS handshakes before the first byte — identical for every site on Earth — plus your
+  HTML transfer plus 4×-throttled rendering. FCP ≤1.0s (metric score 1.0) is reachable only by
+  near-empty pages; ~1.35s on a tuned content page scores ~0.975 and that is the ceiling grade.
+  Desktop pins 100 because its exam is ~4× easier (40ms RTT, 10Mbit/s, no CPU throttle) — the
+  same site measures ×4 slower on mobile BY DESIGN; nothing "went wrong".
+- When the tuned page's unrounded score sits at ~99.5, each run's printed 99-vs-100 is literal
+  rounding of network wobble. The only roll-proof move left is shipping the page without JS
+  (per-route `noScripts` in Nuxt) — a product decision (kills toggles/accordions), not a perf
+  trick. Otherwise: capture the 100 with screenshots and declare the distribution final.
 - PSI's shared VMs randomly spike TBT (~500ms on runs whose network numbers are pristine → score
   dips to high-80s). Officially acknowledged in PSI's release notes. Not your code. Judge by the
   **median of 3–5 fresh samples** (check `fetchTime` advanced), never a single run.
@@ -199,6 +221,8 @@ paint, inverting the premise) — those need a preview deploy + PSI.
   neutralizes it, but check TTFB on bad runs.
 - Report honestly: before→after medians per category per form factor, named remaining audits,
   outliers labeled as outliers. Never round up.
+- The lab digit is cosmetic for SEO: **search ranking uses field data (CrUX real-user Core Web
+  Vitals), not the simulated Lighthouse score.**
 
 ## Step 8 — The automated 100-hunt (when the goal is a screenshot of 100)
 

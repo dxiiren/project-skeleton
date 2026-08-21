@@ -89,10 +89,17 @@ not in any scored audit).
 log-normal curve, sum ×100). INSIGHTS/DIAGNOSTICS are advisory — tie every fix to the metric it
 moves, or it moved nothing. Never report "fixed 6 diagnostics" as progress.
 
-**The endgame arithmetic:** the displayed score rounds the weighted sum, so 100 needs **≥ 99.5**.
-With TBT and CLS at 1.0 (achievable and mandatory), FCP+LCP+SI must average ~0.99. Google's
-calculator (googlechrome.github.io/lighthouse/scorecalc) shows *rounded* metric scores — a run the
-calculator displays as "100" can truly be 99.4x and print 99. Do the math with raw `numericValue`s.
+**The endgame arithmetic — the single most important rule at the 99/100 knife-edge:**
+Lighthouse **rounds each metric score to 2 decimals BEFORE weighting it** (the LHR audit `score` is
+already `Math.round(raw*100)/100`). A tuned page bleeds ~0.1 point to clamping alone, and a
+sub-100ms metric gain that looks like run-noise can be **decisive** by flipping a metric across an
+`x.xx5` boundary. Worked example: mobile FCP 1373ms scores 0.9749 raw → clamps to **0.97**; with LCP
+clamped to 0.99 the category is `0.10·0.97 + 0.10·1.00 + 0.25·0.99 + 0.30·1.00 + 0.25·1.00 = 0.9945
+→ prints 99`, though unclamped it is 99.53 (a 100). So the goal is not "average ~0.99" — it is to
+push the gating metric past its nearest boundary (FCP 0.975→0.98, LCP 0.995→1.00). Compute from raw
+`numericValue`s AND simulate the clamp; the calculator (googlechrome.github.io/lighthouse/scorecalc)
+shows already-rounded badges, hiding the exact digit that decides the point. Do NOT write off a
+persistent 99 as VM noise until you have checked which metric sits on the boundary.
 
 **Deterministic-ceiling detection — the single most valuable diagnostic:** collect 10+ samples and
 look at the *clean* rolls (low TBT). If a metric repeats the **exact same millisecond value** run
@@ -130,6 +137,43 @@ Run this on the live page before anything else:
   even for lazily-hydrated components — strip non-entry ones at the HTML-render hook; even
   `rel=prefetch` demotions steal bandwidth on the simulated 1.6Mbps pipe. (Chunk BYTES still
   download via the module graph — only hydration WORK defers; that is fine and optimal.)
+
+## Step 4.5 — Tuned but still 99: profile pre-FCP, then ARBITRATE the throttled pipe
+
+When every scored audit already looks clean (TBT ~20ms, CLS 0) and mobile still prints 99, the cost
+hides where no scored audit reports it. This is the method that broke a stubborn, bit-exact mobile 99
+into a consistent 100 (7/7 fresh samples) after a prior campaign wrongly declared the page optimal.
+
+**A. Profile the pre-FCP main thread.** TBT only counts long tasks AFTER FCP, so pre-FCP CPU work is
+invisible in the report. Trace it with the Chrome DevTools Protocol under PageSpeed's emulation
+(Playwright + CDP): `Emulation.setCPUThrottlingRate {rate:4}`, `Network.emulateNetworkConditions
+{latency:150, downloadThroughput:1.6*1024*1024/8}`, trace `devtools.timeline`/`blink.user_timing`/
+`loading`, then bucket every event whose `ts` is in `[navigationStart, firstContentfulPaint]` by
+name and sum `dur`. If `Layout`/`UpdateLayoutTree` dominate, first paint is layout-bound (a large DOM
+laid out before the hero paints), not network-bound — measure it, don't assume. (Field result: one
+project's Layout was ~245ms = ~70% of the pre-FCP window, disproving its own "network-bound" claim.)
+
+**B. Arbitrate the single throttled pipe — demote, don't delete.** Slow-4G is one ~200KB/s pipe;
+everything hinted High-priority in `<head>` races the HTML document that FCP waits on (document + its
+inline CSS). Measure how many *compressed* bytes precede the LCP element (`indexOf` the LCP text,
+brotli the prefix at the CDN's real quality — many serve ~q4, not q11), then:
+
+- **Strip `fetchpriority="high"` from any preload whose target can't be the LCP element** (an image
+  behind an entrance animation / opacity gate is disqualified as an LCP candidate — confirm via
+  `lcp-breakdown-insight`). Keep the preload; just stop it preempting the render-blocking CSS.
+- **Demote the framework entry `modulepreload` to `fetchpriority="low"` — do NOT remove it.**
+  Removing it delays the module graph until the parser reaches the closing `<script>` (measured
+  FCP +59ms, 4/4 pairs). `low` keeps the fetch early while the document bytes win the pipe.
+- **`content-visibility: auto` on the heaviest below-fold sections** skips their pre-FCP layout.
+  `contain-intrinsic-size` MUST be measured per breakpoint (heights can differ 3–4× between mobile
+  and desktop) or JS anchor-nav mis-lands — verify nav + entrance animations after.
+
+**Localhost caveat that will mislead you:** a local interleaved A/B can show a large delta from a
+lever that moves nothing on production (or vice-versa), because the metric's binding constraint
+differs by environment (localhost LCP layout-bound at ~3s vs production LCP network-bound at ~1.6s).
+Trust local deltas only for resource-graph changes; confirm the rest on production with **cache-busted**
+URLs (`?v=<n>` — on a CDN these still serve from cache, so no TTFB penalty, but PSI must analyse each
+afresh, which also defeats its identical-`fetchTime` replay).
 
 ## Step 5 — Fixes that recur, by the metric they move
 

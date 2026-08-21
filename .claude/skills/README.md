@@ -36,6 +36,7 @@ Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 | [verify-before-claim](verify-before-claim/SKILL.md) | Spawn a fresh adversarial verifier subagent that must prove the change works with live evidence before anything is called done. | opus   |
 | [pre-pr-review](pre-pr-review/SKILL.md)             | Self-review the branch diff against this project's stack checklist + a boot check; report to `workspace/reports/pr/`.           | opus   |
 | [lint-check](lint-check/SKILL.md)                   | Run this project's quality layers (stack gate, kit-placeholder grep, debug-leftover grep); report pass/fail per layer.          | sonnet |
+| [audit-docs](audit-docs/SKILL.md)                   | Layered adversarial audit of a document set (cross-set → re-verify → per-document), with the fix loop and an `audits/` trail.   | opus   |
 
 ## MCP tooling
 
@@ -55,6 +56,7 @@ Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 | Skill                                       | What it does                                                                                                        | Model  |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ |
 | [sharpen-prompt](sharpen-prompt/SKILL.md)   | Rewrite a fuzzy request into a brief with a pasteable definition of done before starting work.                      | opus   |
+| [define-requirements](define-requirements/SKILL.md) | New project or capability: interrogate + research in parallel, then write Discovery → BRD → PRD → FSD → TDD into `.docs/00-requirements/`. | opus   |
 | [define-goal](define-goal/SKILL.md)         | Interrogate until a goal is unambiguous, then write a stop-proof `{topic}-goal.md` for the built-in `/goal` runner. | opus   |
 | [claude-transfer](claude-transfer/SKILL.md) | Pointer-based session-handoff brief to `workspace/reports/transfers/claude/`.                                       | sonnet |
 | [llm-transfer](llm-transfer/SKILL.md)       | Self-contained master prompt for an external LLM → `workspace/reports/transfers/{tool}/`.                           | sonnet |

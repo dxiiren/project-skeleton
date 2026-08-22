@@ -34,6 +34,10 @@ here becomes a wrong decision made unsupervised later.**
   audits/                # the audit trail (written by /audit-docs)
 ```
 
+Products with a UI also produce a root **`DESIGN.md`** - the locked visual direction (palette as
+tokens, type, theme modes, per-page layout) settled via clickable prototypes in step D.5, which the
+FSD cites and `/define-goal`'s build treats as law.
+
 ## The five-stage law
 
 Each stage answers exactly one question. A stage may **refine** what came before; it may never
@@ -70,6 +74,12 @@ an inline `[superseded - see X]` note the same day - never a silent divergence.
    architecture that was rejected.
 7. **Audit before build.** Run `/audit-docs` when the pipeline is drafted, fix, then re-verify.
    Fix passes introduce their own contradictions - assume it.
+8. **Lock the look before the build, not after (any product with a UI).** Visual identity and
+   per-page layout are decisions the owner must *see* to make - describing them in prose gets a
+   shrug, then a rebuild once the app is running. Settle them with clickable HTML prototypes
+   during requirements (step D.5), record the winners in `DESIGN.md`, and let the FSD cite it.
+   Iterating the UI on the live app after it is built is the single most expensive way to
+   discover the owner wanted something else.
 
 ## Procedure
 
@@ -136,6 +146,30 @@ Update the tracker README after each stage. **You** decide when a stage is close
 the developer to approve prose they have not read; ask them the questions whose answers you
 still need.
 
+### D.5 Prototype the UI - lock the look before code (skip for headless / CLI / API-only)
+
+For any product with screens, the FSD's "how it behaves" is only half the picture - the owner
+also has a *taste* that no amount of prose captures. Settle it here, with things they can click,
+so the build renders the agreed design once instead of being re-skinned live afterwards.
+
+Work top-down, one decision at a time, each as a **self-contained clickable HTML artifact** (real
+sample content, real fonts, inline styles - no build step), published for the owner to react to:
+
+1. **Design direction / palette.** Offer 3-4 distinct visual identities as one page with a live
+   switcher (or side-by-side), each a real mock of the app's hero screen - not swatches. Let the
+   owner pick one. Record the winner (palette as named tokens, type pairing, motion) in `DESIGN.md`.
+2. **Theme modes.** Confirm dark / light / both up front - it changes how every colour is defined
+   (tokens, not literals) and is painful to retrofit.
+3. **Per-page layout.** For each core screen (list, detail, dashboard, settings, auth, ...), show
+   2-3 genuinely different arrangements in the chosen palette and let the owner pick per page.
+   Enumerate every page - the ones you skip are the ones they ask about after the build.
+4. If the domain has live data the owner will recognise (prices, charts, records), pull a **real
+   snapshot** into the prototype - a real candle series beats lorem, and it surfaces framing bugs.
+
+Then fold the choices into the FSD screen specs and `DESIGN.md` (which `/define-goal`'s build reads
+as law). Colour and spacing become tokens so the whole app - and both themes - re-theme from one
+place. This step is cheap in prototype tokens and saves a full re-skin of a running app.
+
 ### E. Audit - before anyone writes code
 
 Run `/audit-docs` over the finished pipeline. Apply its findings, then re-verify - a fix pass
@@ -177,3 +211,10 @@ autonomous build (`/define-goal`, whose work-list should mirror the TDD's build 
   formula whose reference price was never pinned - a 2.5x risk error), and lifecycle holes (a
   state machine that could never compute its own headline statistic). All three were caught by
   audit layers, not by drafting - hence rule 7.
+- UI cost, learned the hard way (dxiiren-trading, 2026-08-22): the pipeline nailed *behaviour*
+  but never pinned the *look*, so the app was built, then re-skinned live over a long back-and-forth
+  ("the UI is so ugly, haven't you done research?") - palette, per-page layout, a chart on the
+  signal page, and a light mode all discovered *after* the build, at high token cost. The fix is
+  step D.5 + rule 8: settle design direction, theme modes and per-page layout with clickable
+  prototypes during requirements, banked in `DESIGN.md`. Owners decide visuals by seeing, not
+  reading; a few prototype pages up front are far cheaper than re-theming a running app.

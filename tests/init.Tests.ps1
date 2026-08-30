@@ -109,11 +109,20 @@ Describe 'init.ps1 — static stack (server-shaped)' {
         Join-Path $copy 'GROUNDING.md' | Should -Not -Exist
     }
 
-    It 'removes the scaffolding: stacks/, init.ps1, gitignore-block.txt, tests/' {
+    It 'removes the scaffolding: stacks/, init.ps1, initial-setup.ps1, gitignore-block.txt, tests/' {
         Join-Path $copy 'stacks'              | Should -Not -Exist
         Join-Path $copy 'init.ps1'            | Should -Not -Exist
+        Join-Path $copy 'initial-setup.ps1'   | Should -Not -Exist
         Join-Path $copy 'gitignore-block.txt' | Should -Not -Exist
         Join-Path $copy 'tests'               | Should -Not -Exist
+    }
+
+    It 'leaves the stack setup.ps1 as the only setup script at the root' {
+        # initial-setup.ps1 bootstraps the MACHINE and must not ship next to the stack's
+        # setup.ps1 -- two same-named-looking scripts is exactly the confusion to avoid.
+        $setupScripts = @(Get-ChildItem -Path $copy -File -Filter '*setup*.ps1' |
+            Select-Object -ExpandProperty Name)
+        $setupScripts | Should -Be @('setup.ps1')
     }
 
     It 'merges the gitignore block into .gitignore' {
@@ -177,11 +186,12 @@ Describe 'init.ps1 — cli-java stack (no port)' {
     }
 
     It 'creates CLAUDE.md and README.md and removes the scaffolding' {
-        Join-Path $copy 'CLAUDE.md' | Should -Exist
-        Join-Path $copy 'README.md' | Should -Exist
-        Join-Path $copy 'stacks'    | Should -Not -Exist
-        Join-Path $copy 'init.ps1'  | Should -Not -Exist
-        Join-Path $copy 'tests'     | Should -Not -Exist
+        Join-Path $copy 'CLAUDE.md'         | Should -Exist
+        Join-Path $copy 'README.md'         | Should -Exist
+        Join-Path $copy 'stacks'            | Should -Not -Exist
+        Join-Path $copy 'init.ps1'          | Should -Not -Exist
+        Join-Path $copy 'initial-setup.ps1' | Should -Not -Exist
+        Join-Path $copy 'tests'             | Should -Not -Exist
     }
 
     It 'leaves the content tokens for /ground-project, as designed' {
@@ -421,11 +431,12 @@ Describe 'init.ps1 — missing required value, non-interactively' {
 
     It 'bails BEFORE touching anything — no half-scaffolded project is left behind' {
         # The guard fires before step 1, so the skeleton must be completely intact.
-        Join-Path $noMainClassCopy 'setup.ps1'    | Should -Not -Exist
-        Join-Path $noMainClassCopy 'CLAUDE.md'    | Should -Not -Exist
-        Join-Path $noMainClassCopy 'stacks'       | Should -Exist
-        Join-Path $noMainClassCopy 'init.ps1'     | Should -Exist
-        Join-Path $noMainClassCopy 'GROUNDING.md' | Should -Exist
+        Join-Path $noMainClassCopy 'setup.ps1'         | Should -Not -Exist
+        Join-Path $noMainClassCopy 'CLAUDE.md'         | Should -Not -Exist
+        Join-Path $noMainClassCopy 'stacks'            | Should -Exist
+        Join-Path $noMainClassCopy 'init.ps1'          | Should -Exist
+        Join-Path $noMainClassCopy 'initial-setup.ps1' | Should -Exist
+        Join-Path $noMainClassCopy 'GROUNDING.md'      | Should -Exist
     }
 }
 
@@ -449,7 +460,65 @@ Describe 'init.ps1 — missing stacks folder' {
         Join-Path $copy 'setup.ps1'           | Should -Not -Exist
         Join-Path $copy 'CLAUDE.md'           | Should -Not -Exist
         Join-Path $copy 'init.ps1'            | Should -Exist
+        Join-Path $copy 'initial-setup.ps1'   | Should -Exist
         Join-Path $copy 'GROUNDING.md'        | Should -Exist
         Join-Path $copy 'CLAUDE.md.template'  | Should -Exist
+    }
+}
+
+Describe 'init.ps1 — no initial-setup.ps1 on disk' {
+
+    BeforeAll {
+        # Someone who bootstrapped their machine straight from the web
+        # (irm .../initial-setup.ps1 | iex) never had that file in their clone. The
+        # removal step must be a no-op, not a crash.
+        $copy = New-SkeletonCopy
+        Remove-Item -Force (Join-Path $copy 'initial-setup.ps1')
+        $result = Invoke-Init -Root $copy -Arguments @(
+            '-Name', 'test-noboot', '-Stack', 'static', '-Port', '8588', '-Docroot', '.')
+    }
+
+    It 'scaffolds normally without it' {
+        $result.ExitCode | Should -Be 0
+        $result.Output   | Should -Match 'Scaffold complete'
+        $result.Output   | Should -Not -Match 'Removed initial-setup\.ps1'
+        Join-Path $copy 'setup.ps1' | Should -Exist
+        Join-Path $copy 'CLAUDE.md' | Should -Exist
+        Join-Path $copy 'stacks'    | Should -Not -Exist
+    }
+}
+
+Describe 'initial-setup.ps1 — the machine bootstrap itself' {
+
+    BeforeAll {
+        $script:bootstrapPath = Join-Path $script:RepoRoot 'initial-setup.ps1'
+        $script:bootstrapText = [System.IO.File]::ReadAllText($script:bootstrapPath)
+    }
+
+    It 'parses under Windows PowerShell 5.1 — the only shell a fresh laptop has' {
+        # It runs BEFORE PowerShell 7 exists, so PS7-only syntax would be fatal there
+        # and invisible to this pwsh-hosted suite. Parse it with the 5.1 engine itself.
+        $psExe  = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $probe  = '$e = $null; [void][System.Management.Automation.Language.Parser]::ParseFile(' +
+                  "'$script:bootstrapPath'" + ', [ref]$null, [ref]$e); ' +
+                  'if ($e.Count) { $e | ForEach-Object { $_.Message }; exit 1 }'
+        $out = & $psExe -NoProfile -Command $probe 2>&1 | Out-String
+        $LASTEXITCODE | Should -Be 0 -Because "5.1 parse errors: $out"
+    }
+
+    It 'carries no tokens — it is machine-level and never sees the token fill' {
+        $script:bootstrapText | Should -Not -Match '@[@]'
+    }
+
+    It 'installs pwsh, which no stack setup.ps1 does' {
+        # The whole family is driven with `pwsh ./setup.ps1`; this is the only script
+        # that can install PowerShell 7, because it is the only one 5.1 has to run.
+        $script:bootstrapText | Should -Match 'Microsoft\.PowerShell'
+    }
+
+    It 'verifies every tool the kit needs before declaring success' {
+        foreach ($tool in @('git','pwsh','node','npm','claude','uv','just','gh')) {
+            $script:bootstrapText | Should -Match "'$tool'"
+        }
     }
 }

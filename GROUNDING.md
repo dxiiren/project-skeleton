@@ -8,7 +8,7 @@ invariants, the token system, the per-stack boot-verify bar, and the git rules.
 > At scaffold time `init.ps1` moves this file to `.docs/05-reference/conventions.md`
 > (unmodified — see "Expected token locations" for why it is skipped during token fill).
 
-## The two-step scaffold
+## The scaffold, end to end
 
 1. **`.\init.ps1`** — mechanical: picks the stack, copies its `setup.ps1` + `justfile`,
    fills the mechanical tokens everywhere, merges the gitignore block, deletes the
@@ -16,6 +16,32 @@ invariants, the token system, the per-stack boot-verify bar, and the git rules.
 2. **`/ground-project`** (in Claude Code) — intelligent: reads the real code, fills every
    content token, grounds the skills' worked examples in this project's facts, enables
    qualifying optional skills, runs the skill audit to PASS, and boot-verifies.
+
+### Step 0: the machine (`initial-setup.ps1`, once per laptop)
+
+Both steps above assume a machine that already has Git, PowerShell 7, Node, Claude Code,
+uv, just and gh. A brand-new laptop has none of them — it cannot even clone the skeleton.
+`initial-setup.ps1` installs that set, and is the only script here that must run under
+**Windows PowerShell 5.1**, because it runs before PowerShell 7 exists. Consequences:
+
+- **No PS7-only syntax** in it — no `??`, no `?:` ternary, no `-Parallel`, no
+  `$PSStyle`. The Pester suite re-parses the file with the 5.1 engine to enforce this;
+  a pwsh-only check would never catch the breakage.
+- **It is the only script that installs `Microsoft.PowerShell`.** A stack `setup.ps1`
+  cannot: the documented way to run it is `pwsh ./setup.ps1`.
+- **Native-command stderr is captured, not piped to `Out-Host`.** Under 5.1 any stderr
+  line from a native command renders as a red `NativeCommandError` — `git clone`'s
+  progress would make a successful clone look broken. Capture into a variable and print
+  it only when `$LASTEXITCODE` says it failed. (The verbatim `Install-Winget` helper
+  keeps its `| Out-Host`; winget's output is worth streaming.)
+- **It carries no tokens** and never reaches the token fill: `init.ps1` removes it in the
+  scaffolding-cleanup step, so a scaffolded project ships exactly one `setup.ps1`. The
+  removal is `Test-Path`-guarded — bootstrapping from the web (`irm ... | iex`) means the
+  file was never in the clone.
+
+Scope rule: `initial-setup.ps1` installs what is needed to *start any project in this
+family*. Anything stack-specific (PHP, JDK, w64devkit, Composer) belongs in the stack's
+`setup.ps1`, never here.
 
 ## Scaffold self-test (Pester-locked)
 
@@ -30,7 +56,11 @@ It scaffolds a throwaway `%TEMP%` copy for **every stack in `stacks/`** and asse
   table — zero mechanical tokens left in the stack's `justfile`/`setup.ps1`, and every
   token that stack owns carrying the value actually passed;
 - the failure paths — the already-scaffolded re-run guard, a missing required value,
-  a missing `stacks/` folder (all exit 1), and `-FreshGit` producing a repo on `main`.
+  a missing `stacks/` folder (all exit 1), and `-FreshGit` producing a repo on `main`;
+- `initial-setup.ps1` — that it parses under the **5.1 engine** (spawned explicitly:
+  the suite's own pwsh host cannot catch 5.1-invalid syntax), carries no tokens,
+  installs `Microsoft.PowerShell`, and verifies all eight tools. Plus a scaffold from a
+  clone with the file deleted, proving init's removal step is a no-op when it is absent.
 
 **Adding a stack means adding its `$stackMatrix` row in the same commit** — one row of
 arguments plus the regexes proving its own tokens got filled. Likewise, if you change

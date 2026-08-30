@@ -147,6 +147,16 @@ if (Test-Path $skelTests) {
     Write-Host "[OK] Removed tests\init.Tests.ps1 (the skeleton's own Pester suite)" -ForegroundColor Green
 }
 
+# initial-setup.ps1 bootstraps the MACHINE (git/pwsh/node/claude/uv/just/gh), not this
+# project -- it is run once per laptop and would only be confused with the stack's
+# setup.ps1 if it shipped. Test-Path guarded: someone who ran it straight from the web
+# (irm ... | iex) never had the file on disk.
+$initialSetup = Join-Path $root "initial-setup.ps1"
+if (Test-Path $initialSetup) {
+    Remove-Item -Force $initialSetup
+    Write-Host "[OK] Removed initial-setup.ps1 (the per-machine bootstrap)" -ForegroundColor Green
+}
+
 # ---------- 5. Fill the mechanical tokens ----------
 $tokens = [ordered]@{
     '@@PROJECT_TITLE@@' = $title

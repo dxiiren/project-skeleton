@@ -109,10 +109,11 @@ Describe 'init.ps1 — static stack (server-shaped)' {
         Join-Path $copy 'GROUNDING.md' | Should -Not -Exist
     }
 
-    It 'removes the scaffolding: stacks/, init.ps1, initial-setup.ps1, gitignore-block.txt, tests/' {
+    It 'removes the scaffolding: stacks/, init.ps1, initial-setup.ps1, tools/claude-local, gitignore-block.txt, tests/' {
         Join-Path $copy 'stacks'              | Should -Not -Exist
         Join-Path $copy 'init.ps1'            | Should -Not -Exist
         Join-Path $copy 'initial-setup.ps1'   | Should -Not -Exist
+        Join-Path $copy 'tools'               | Should -Not -Exist
         Join-Path $copy 'gitignore-block.txt' | Should -Not -Exist
         Join-Path $copy 'tests'               | Should -Not -Exist
     }
@@ -191,6 +192,7 @@ Describe 'init.ps1 — cli-java stack (no port)' {
         Join-Path $copy 'stacks'            | Should -Not -Exist
         Join-Path $copy 'init.ps1'          | Should -Not -Exist
         Join-Path $copy 'initial-setup.ps1' | Should -Not -Exist
+        Join-Path $copy 'tools'             | Should -Not -Exist
         Join-Path $copy 'tests'             | Should -Not -Exist
     }
 
@@ -436,6 +438,7 @@ Describe 'init.ps1 — missing required value, non-interactively' {
         Join-Path $noMainClassCopy 'stacks'            | Should -Exist
         Join-Path $noMainClassCopy 'init.ps1'          | Should -Exist
         Join-Path $noMainClassCopy 'initial-setup.ps1' | Should -Exist
+        Join-Path $noMainClassCopy 'tools\claude-local\install.ps1' | Should -Exist
         Join-Path $noMainClassCopy 'GROUNDING.md'      | Should -Exist
     }
 }
@@ -520,5 +523,63 @@ Describe 'initial-setup.ps1 — the machine bootstrap itself' {
         foreach ($tool in @('git','pwsh','node','npm','claude','uv','just','gh')) {
             $script:bootstrapText | Should -Match "'$tool'"
         }
+    }
+}
+
+Describe 'tools/claude-local/install.ps1 — the opt-in local-model launcher' {
+
+    BeforeAll {
+        # Installs into throwaway dirs inside a skeleton copy: -ClaudeDir / -BinDir /
+        # -ProfilePath keep it away from the real profile and PATH, -SkipProbe keeps it
+        # offline. Run twice on purpose: the second run must be a clean no-op.
+        $copy        = New-SkeletonCopy
+        $installer   = Join-Path $copy 'tools\claude-local\install.ps1'
+        $claudeDir   = Join-Path $copy '_home\.claude\local-llm'
+        $binDir      = Join-Path $copy '_home\.local\bin'
+        $profileFile = Join-Path $copy '_home\profile.ps1'
+        $installArgs = @('-Upstream', 'http://127.0.0.1:9/', '-ClaudeDir', $claudeDir, '-BinDir', $binDir,
+                         '-ProfilePath', $profileFile, '-SkipProbe')
+        $first      = & pwsh -NoProfile -File $installer @installArgs 2>&1 | Out-String
+        $firstCode  = $LASTEXITCODE
+        $second     = & pwsh -NoProfile -File $installer @installArgs 2>&1 | Out-String
+        $secondCode = $LASTEXITCODE
+    }
+
+    It 'completes successfully, twice (idempotent)' {
+        $firstCode  | Should -Be 0 -Because $first
+        $secondCode | Should -Be 0 -Because $second
+        $first      | Should -Match 'claude-local installed'
+    }
+
+    It 'installs the launcher, shim and README next to a config.json holding the upstream' {
+        Join-Path $claudeDir 'claude-local.ps1' | Should -Exist
+        Join-Path $claudeDir 'shim.py'          | Should -Exist
+        Join-Path $claudeDir 'README.md'        | Should -Exist
+        $cfg = Get-Content (Join-Path $claudeDir 'config.json') -Raw | ConvertFrom-Json
+        $cfg.upstream | Should -Be 'http://127.0.0.1:9'   # trailing slash trimmed
+    }
+
+    It 'writes the .cmd and Git Bash stubs pointing at the launcher' {
+        $cmd  = Join-Path $binDir 'claude-local.cmd'
+        $bash = Join-Path $binDir 'claude-local'
+        $cmd  | Should -Exist
+        $bash | Should -Exist
+        [System.IO.File]::ReadAllText($cmd)  | Should -Match 'claude-local\.ps1'
+        [System.IO.File]::ReadAllText($bash) | Should -Match 'claude-local\.ps1'
+    }
+
+    It 'adds the claude-local function to the profile exactly once, even after the re-run' {
+        $profileFile | Should -Exist
+        $text = [System.IO.File]::ReadAllText($profileFile)
+        ([regex]::Matches($text, 'function claude-local')).Count | Should -Be 1
+    }
+
+    It 'parses under Windows PowerShell 5.1 — initial-setup.ps1 runs it there' {
+        $psExe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $probe = '$e = $null; [void][System.Management.Automation.Language.Parser]::ParseFile(' +
+                 "'$installer'" + ', [ref]$null, [ref]$e); ' +
+                 'if ($e.Count) { $e | ForEach-Object { $_.Message }; exit 1 }'
+        $out = & $psExe -NoProfile -Command $probe 2>&1 | Out-String
+        $LASTEXITCODE | Should -Be 0 -Because "5.1 parse errors: $out"
     }
 }

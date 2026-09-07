@@ -8,7 +8,7 @@
 | Recipe | What it does | When |
 | --- | --- | --- |
 [GROUND: one row per recipe in THIS justfile (read it — don't guess), including the
-claudex/claudeo/claudeh tail. Keep this table in sync with the justfile whenever a
+claudex/claudeo/claudeh/claudel tail. Keep this table in sync with the justfile whenever a
 recipe is added or removed.]
 
 ## Guards

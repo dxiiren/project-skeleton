@@ -71,3 +71,7 @@ claudeo:
 # Launch Claude Code with all permissions — Haiku (latest)
 claudeh:
     claude --dangerously-skip-permissions --model haiku
+
+# Launch Claude Code with all permissions — the self-hosted model via claude-local (/setup-claude-local)
+claudel:
+    claude-local --dangerously-skip-permissions

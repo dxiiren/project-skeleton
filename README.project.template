@@ -34,6 +34,7 @@ Run `just` with no arguments to list every recipe. The ones you'll use daily:
 | --- | --- |
 @@COMMANDS_ROWS@@
 | `just claudex` | Launch Claude Code (Sonnet, all permissions) |
+| `just claudel` | Launch Claude Code on the self-hosted model (needs `claude-local`: `/setup-claude-local`) |
 
 ## Troubleshooting
 

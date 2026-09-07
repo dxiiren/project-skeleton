@@ -91,6 +91,42 @@ _lock = threading.Lock()
 _counter = [0]
 _context_cache = {}          # upstream -> context length
 _no_count_endpoint = set()   # upstreams whose /count_tokens returned 404 (Ollama): estimate instead
+_ollama_upstreams = {}       # upstream -> bool, probed once via /api/version
+_truncation_checked = set()  # (upstream, model) pairs already compared against /api/ps
+
+
+def is_ollama(upstream: str) -> bool:
+    if upstream not in _ollama_upstreams:
+        ok = False
+        try:
+            with urllib.request.urlopen(upstream + "/api/version", timeout=3) as r:
+                ok = bool(json.load(r).get("version"))
+        except Exception:  # noqa: BLE001
+            ok = False
+        _ollama_upstreams[upstream] = ok
+    return _ollama_upstreams[upstream]
+
+
+def check_ollama_context(upstream: str, model: str, expected: int):
+    """Ollama truncates prompts to its num_ctx silently (no error, no header). After a response,
+    compare the loaded model's context_length from /api/ps with what this session assumes."""
+    key = (upstream, model)
+    if key in _truncation_checked:
+        return
+    try:
+        with urllib.request.urlopen(upstream + "/api/ps", timeout=5) as r:
+            for m in json.load(r).get("models") or []:
+                if m.get("name") == model or m.get("model") == model:
+                    _truncation_checked.add(key)
+                    actual = int(m.get("context_length") or 0)
+                    if actual and actual < expected:
+                        log(f"WARNING {_short(upstream)} runs {model} with context_length={actual} but this endpoint is configured for {expected}: "
+                            f"Ollama truncates prompts silently. Set OLLAMA_CONTEXT_LENGTH={expected} as a User environment variable and restart the Ollama app.")
+                    else:
+                        log(f"{_short(upstream)} runs {model} with context_length={actual} (endpoint configured for {expected})")
+                    return
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def log(line: str):
@@ -271,6 +307,7 @@ class Handler(BaseHTTPRequestHandler):
                 note += f" folded_system={folded}"
             if path == "/v1/messages":
                 context_len = context_len_for(up, ctx_hdr)
+                self._context_len = context_len
                 err, cnote = clamp_max_tokens(up, context_len, body, dict(self.headers.items()))
                 note += " " + cnote
                 if err:
@@ -322,6 +359,8 @@ class Handler(BaseHTTPRequestHandler):
         model = body.get("model") if isinstance(body, dict) else ""
         stream = body.get("stream") if isinstance(body, dict) else ""
         log(f"{self.command} {self.path} up={_short(upstream)} model={model} stream={stream}{note} => {status} {total}B {time.time() - started:.1f}s{summary}")
+        if status < 400 and model and self.path.split("?", 1)[0] == "/v1/messages" and is_ollama(upstream):
+            check_ollama_context(upstream, model, getattr(self, "_context_len", None) or context_len_for(upstream))
 
 
 def main():

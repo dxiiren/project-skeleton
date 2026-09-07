@@ -65,6 +65,12 @@ the endpoints it already knows.
 - `context` 0 = ask the server (`max_model_len`, which vLLM reports). **Ollama never reports
   it**: set `context` to the same value as `OLLAMA_CONTEXT_LENGTH` on the Ollama side, or Ollama
   truncates prompts silently. The installer records 32768 for an Ollama endpoint if you pass nothing.
+  On Windows the Ollama tray app starts the server itself and picks a VRAM-based default (4096 on
+  an 8 GB GPU); a shell export and a per-request `num_ctx` are both ignored (tested), so set it as
+  a **User environment variable** and restart the app:
+  `[Environment]::SetEnvironmentVariable('OLLAMA_CONTEXT_LENGTH','32768','User')`. The launcher
+  prints a red line, and the shim logs a WARNING, whenever the loaded model's context is smaller
+  than the endpoint's. Ollama has no `/count_tokens`, so the shim estimates prompt sizes there.
 - `claude-local` with no `-e` tries the default, then the others in file order, and says so in
   yellow when it falls back. `-e <name>` never falls back. Per-shell overrides: `LOCAL_LLM_ENDPOINT`
   (a name), or `LOCAL_LLM_UPSTREAM` + `LOCAL_LLM_MODEL` + `LOCAL_LLM_CONTEXT` for an ad-hoc endpoint.

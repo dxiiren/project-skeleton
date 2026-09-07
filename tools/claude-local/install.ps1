@@ -2,12 +2,14 @@
 
 # project-skeleton tools/claude-local/install.ps1 -- install the claude-local launcher
 #
-# claude-local runs the SAME Claude Code binary against a self-hosted vLLM model that
-# serves the Anthropic Messages API (vLLM 0.19+), through a small local shim. The README
-# next to this file explains what the shim fixes and the limits (context size!).
+# claude-local runs the SAME Claude Code binary against self-hosted model servers that serve
+# the Anthropic Messages API (vLLM 0.19+, Ollama), through a small local shim. The README next
+# to this file explains what the shim fixes and the limits (context size!).
 #
 # Usage -- from a clone of the skeleton:
-#   pwsh tools/claude-local/install.ps1 -Upstream http://vllm-host:8000
+#   pwsh tools/claude-local/install.ps1 -Upstream http://vllm-host:8000                     # endpoint "main"
+#   pwsh tools/claude-local/install.ps1 -Name ollama -Upstream http://127.0.0.1:11434 -Model qwen3.5:4b -Context 32768
+#   pwsh tools/claude-local/install.ps1 -Name ollama -Default                                # make it the default
 #
 # Usage -- from the web, no clone (Windows PowerShell 5.1 is fine):
 #   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/dxiiren/project-skeleton/main/tools/claude-local/install.ps1))) -Upstream http://vllm-host:8000
@@ -16,9 +18,15 @@
 #   initial-setup.ps1 -LocalLlmUpstream http://vllm-host:8000
 #
 # Parameters:
-#   -Upstream <url>      Base URL of the vLLM server (no /v1). Required on the first install;
-#                        later runs reuse the one already in config.json.
-#   -Model <id>          Exact model id to use (default: first entry of <url>/v1/models, read at launch)
+#   -Upstream <url>      Base URL of the model server (no /v1). Required the first time; later
+#                        runs without it only refresh the files.
+#   -Name <name>         Endpoint name (default "main"). Each run adds or updates ONE endpoint.
+#   -Model <id>          Exact model id (default: first entry of <url>/v1/models, read at launch).
+#                        Pin it for Ollama, which lists every pulled model.
+#   -Label <text>        Name shown in Claude Code's /model picker (default: "<model> (<name>)")
+#   -Context <tokens>    Context length. vLLM reports it (max_model_len); Ollama does NOT, so set
+#                        it to the same value as OLLAMA_CONTEXT_LENGTH on the Ollama side.
+#   -Default             Make -Name the default endpoint (the first endpoint is default anyway)
 #   -Source <dir|url>    Where claude-local.ps1 / shim.py / README.md come from. Default: this
 #                        script's folder when run from a clone, else the skeleton's raw URL.
 #   -ClaudeDir <dir>     Install dir            (default %USERPROFILE%\.claude\local-llm)
@@ -27,13 +35,17 @@
 #   -NoProfileEdit       Do not touch any PowerShell profile
 #   -SkipProbe           Do not contact the upstream (offline installs, tests)
 #
-# Idempotent: re-running refreshes the files and never duplicates the profile line.
-# Must parse and run under Windows PowerShell 5.1 (initial-setup.ps1 calls it there).
+# Idempotent: re-running refreshes the files, keeps the other endpoints, and never duplicates
+# the profile line. Must parse and run under Windows PowerShell 5.1 (initial-setup.ps1 calls it there).
 
 [CmdletBinding()]
 param(
     [string]$Upstream,
+    [string]$Name = 'main',
     [string]$Model,
+    [string]$Label,
+    [int]$Context = 0,
+    [switch]$Default,
     [string]$Source,
     [string]$ClaudeDir = "$env:USERPROFILE\.claude\local-llm",
     [string]$BinDir    = "$env:USERPROFILE\.local\bin",
@@ -53,6 +65,13 @@ $DefaultRaw = 'https://raw.githubusercontent.com/dxiiren/project-skeleton/main/t
 $Files      = @('claude-local.ps1', 'shim.py', 'README.md')
 $utf8NoBom  = New-Object System.Text.UTF8Encoding($false)
 
+function Get-Prop($Obj, [string]$PropName) {
+    if ($null -eq $Obj) { return $null }
+    $p = $Obj.PSObject.Properties[$PropName]
+    if ($p) { return $p.Value }
+    return $null
+}
+
 Write-Host ""
 Write-Host "claude-local install" -ForegroundColor Cyan
 Write-Host "====================" -ForegroundColor Cyan
@@ -69,37 +88,93 @@ $fromUrl = ($Source -match '^https?://')
 $Source  = $Source.TrimEnd('/', '\')
 Write-Host "[INFO] Source: $Source" -ForegroundColor Cyan
 
-# ---------- 2. config.json: upstream + model ----------
+# ---------- 2. config.json: named endpoints ----------
 New-Item -ItemType Directory -Force -Path $ClaudeDir | Out-Null
-$cfgPath  = Join-Path $ClaudeDir 'config.json'
-$existing = $null
+$cfgPath   = Join-Path $ClaudeDir 'config.json'
+$existing  = $null
+$endpoints = [ordered]@{}
+$defaultName = ''
 if (Test-Path $cfgPath) {
     try { $existing = Get-Content $cfgPath -Raw | ConvertFrom-Json } catch { $existing = $null }
 }
-if (-not $Upstream -and $existing -and $existing.upstream) { $Upstream = $existing.upstream }
-if (-not $Upstream) {
-    Write-Host "[FAIL] No upstream. Pass -Upstream http://host:port (the vLLM server's base URL, without /v1)." -ForegroundColor Red
+if ($existing) {
+    $eps = Get-Prop $existing 'endpoints'
+    if ($eps) {
+        foreach ($p in $eps.PSObject.Properties) {
+            $endpoints[$p.Name] = [ordered]@{
+                upstream = [string](Get-Prop $p.Value 'upstream'); model = [string](Get-Prop $p.Value 'model')
+                label    = [string](Get-Prop $p.Value 'label');    context = [int](Get-Prop $p.Value 'context') }
+        }
+        $defaultName = [string](Get-Prop $existing 'default')
+    } elseif (Get-Prop $existing 'upstream') {
+        # pre-endpoints config.json ({ upstream, model, label }) -> endpoints.main
+        $endpoints['main'] = [ordered]@{
+            upstream = ([string]$existing.upstream).TrimEnd('/'); model = [string](Get-Prop $existing 'model')
+            label    = [string](Get-Prop $existing 'label');       context = 0 }
+        $defaultName = 'main'
+        Write-Host "[OK] Migrated the single-endpoint config.json to endpoints.main" -ForegroundColor Green
+    }
+}
+if ($Upstream) {
+    $Upstream = $Upstream.TrimEnd('/')
+    if (-not $endpoints.Contains($Name)) { $endpoints[$Name] = [ordered]@{ upstream = ''; model = ''; label = ''; context = 0 } }
+    $endpoints[$Name].upstream = $Upstream
+}
+if ($endpoints.Contains($Name)) {
+    if ($Model)        { $endpoints[$Name].model   = $Model }
+    if ($Label)        { $endpoints[$Name].label   = $Label }
+    if ($Context -gt 0) { $endpoints[$Name].context = $Context }
+} elseif ($Model -or $Label -or $Context -gt 0 -or $Default) {
+    Write-Host "[FAIL] No endpoint named '$Name' yet. Add it with -Upstream http://host:port." -ForegroundColor Red
     exit 1
 }
-$Upstream = $Upstream.TrimEnd('/')
-if (-not $Model -and $existing -and $existing.model) { $Model = $existing.model }
-$label = ''
-if ($existing -and $existing.label) { $label = $existing.label }
-$cfg = [ordered]@{ upstream = $Upstream; model = "$Model"; label = "$label" }
-[System.IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json), $utf8NoBom)
-$modelNote = ''
-if ($Model) { $modelNote = ", model $Model" }
-Write-Host "[OK] config.json -> upstream $Upstream$modelNote" -ForegroundColor Green
+if ($endpoints.Count -eq 0) {
+    Write-Host "[FAIL] No endpoint. Pass -Upstream http://host:port (the model server's base URL, without /v1)." -ForegroundColor Red
+    exit 1
+}
+if ($Default) { $defaultName = $Name }
+if (-not $defaultName -or -not $endpoints.Contains($defaultName)) { $defaultName = [string]($endpoints.Keys | Select-Object -First 1) }
 
-# ---------- 3. Probe the server (informational only) ----------
+# ---------- 3. Probe the endpoint just set (informational, plus the Ollama context rule) ----------
+$probeName = $defaultName
+if ($Upstream) { $probeName = $Name }
 if (-not $SkipProbe) {
+    $u = $endpoints[$probeName].upstream
     try {
-        $m = Invoke-RestMethod -Uri "$Upstream/v1/models" -TimeoutSec 5 -ErrorAction Stop
+        $m = Invoke-RestMethod -Uri "$u/v1/models" -TimeoutSec 5 -ErrorAction Stop
         $first = $m.data[0]
-        Write-Host "[OK] $Upstream serves '$($first.id)' (context $($first.max_model_len))" -ForegroundColor Green
+        $ctxText = Get-Prop $first 'max_model_len'
+        if (-not $ctxText) { $ctxText = 'not reported' }
+        Write-Host "[OK] [$probeName] $u serves '$($first.id)' (context $ctxText)" -ForegroundColor Green
     } catch {
-        Write-Host "[WARN] $Upstream/v1/models not reachable right now (VPN down?). Installing anyway; claude-local re-checks at launch." -ForegroundColor Yellow
+        Write-Host "[WARN] [$probeName] $u/v1/models not reachable right now (server down, VPN?). Installing anyway; claude-local re-checks at launch." -ForegroundColor Yellow
     }
+    $isOllama = $false
+    try {
+        $v = Invoke-RestMethod -Uri "$u/api/version" -TimeoutSec 3 -ErrorAction Stop
+        if (Get-Prop $v 'version') { $isOllama = $true }
+    } catch { }
+    if ($isOllama) {
+        if ($endpoints[$probeName].context -le 0) {
+            $endpoints[$probeName].context = 32768
+            Write-Host "[WARN] Ollama never reports its context length; recorded 32768 for '$probeName'. Set OLLAMA_CONTEXT_LENGTH=32768 (or more) on the Ollama side, or re-run with -Context N to match what Ollama actually uses -- a mismatch makes Ollama truncate prompts silently." -ForegroundColor Yellow
+        }
+        if (-not $endpoints[$probeName].model) {
+            Write-Host "[WARN] Ollama lists every pulled model; pin the one to use with -Model <name:tag> (it must support tools)." -ForegroundColor Yellow
+        }
+    }
+}
+
+$cfgObj = [ordered]@{ default = $defaultName; endpoints = $endpoints }
+[System.IO.File]::WriteAllText($cfgPath, ($cfgObj | ConvertTo-Json -Depth 5), $utf8NoBom)
+foreach ($k in $endpoints.Keys) {
+    $mark = ' '
+    if ($k -eq $defaultName) { $mark = '*' }
+    $e = $endpoints[$k]
+    $extra = ''
+    if ($e.model)   { $extra += " model $($e.model)" }
+    if ($e.context) { $extra += " context $($e.context)" }
+    Write-Host "[OK] $mark $k -> $($e.upstream)$extra" -ForegroundColor Green
 }
 
 # ---------- 4. The files ----------
@@ -135,7 +210,7 @@ if ($profileRoot -and $launcher.StartsWith($profileRoot, [System.StringCompariso
 }
 $cmdStub = @(
     '@echo off',
-    'rem claude-local: Claude Code on a self-hosted vLLM model. Docs: the README.md next to claude-local.ps1',
+    'rem claude-local: Claude Code on a self-hosted model server. Docs: the README.md next to claude-local.ps1',
     'where pwsh >nul 2>&1',
     'if %errorlevel%==0 (',
     "  pwsh -NoProfile -ExecutionPolicy Bypass -File `"$launcherCmd`" %*",
@@ -181,7 +256,7 @@ if (-not $NoProfileEdit) {
         Write-Host "[OK] $ProfilePath already defines claude-local" -ForegroundColor Green
     } else {
         $line  = 'function claude-local { & "' + $launcherPs + '" @args }'
-        $block = "`r`n# claude-local: Claude Code on a self-hosted vLLM model (project-skeleton tools/claude-local/install.ps1)`r`n$line`r`n"
+        $block = "`r`n# claude-local: Claude Code on a self-hosted model server (project-skeleton tools/claude-local/install.ps1)`r`n$line`r`n"
         [System.IO.File]::AppendAllText($ProfilePath, $block, $utf8NoBom)
         Write-Host "[OK] Added the claude-local function to $ProfilePath" -ForegroundColor Green
     }
@@ -204,6 +279,8 @@ if (Test-Path $pidFile) {
 # ---------- Done ----------
 Write-Host ""
 Write-Host "claude-local installed." -ForegroundColor Green
-Write-Host "[NEXT] Open a NEW terminal, then:   claude-local" -ForegroundColor Gray
-Write-Host "[NEXT] Inside it, /model lists the local model row. Request log: $ClaudeDir\logs\shim.log" -ForegroundColor Gray
+Write-Host "[NEXT] Open a NEW terminal, then:   claude-local            (default endpoint '$defaultName', falls back to the others)" -ForegroundColor Gray
+Write-Host "[NEXT]                              claude-local --list     (every endpoint, reachability, model, context)" -ForegroundColor Gray
+Write-Host "[NEXT]                              claude-local -e <name>  (a specific endpoint)" -ForegroundColor Gray
+Write-Host "[NEXT] Request log: $ClaudeDir\logs\shim.log" -ForegroundColor Gray
 Write-Host ""

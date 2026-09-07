@@ -164,6 +164,18 @@ if (-not $Label) {
     $Label = "$leaf ($($chosen.Name))"
 }
 
+# Ollama truncates prompts to its num_ctx silently. If the chosen model is already loaded with a
+# smaller context than this endpoint assumes, say so now (the shim logs the same after each reply).
+try {
+    $ps = Invoke-RestMethod -Uri "$Upstream/api/ps" -TimeoutSec 3 -ErrorAction Stop
+    foreach ($m in @($ps.models)) {
+        $loadedCtx = [int](Get-Prop $m 'context_length')
+        if (($m.name -eq $Model -or $m.model -eq $Model) -and $loadedCtx -and $loadedCtx -lt $ContextLen) {
+            Write-Host "claude-local: Ollama runs $Model with a $loadedCtx-token context but endpoint '$($chosen.Name)' expects $ContextLen, so Ollama would truncate prompts silently. Fix: [Environment]::SetEnvironmentVariable('OLLAMA_CONTEXT_LENGTH','$ContextLen','User') then restart the Ollama app." -ForegroundColor Red
+        }
+    }
+} catch { }
+
 # ---------- 2. shim up? start it detached if not ----------
 # The shim is stdlib Python. Prefer pythonw (no console window); fall back to python, then
 # to the interpreter uv manages (initial-setup.ps1 installs Python that way, off PATH).

@@ -36,6 +36,7 @@ To pass arguments, `iex` won't do — use a scriptblock:
 | `-GitName` / `-GitEmail` | Set the **global** git identity (skipped if one already exists) |
 | `-IncludeExtras` | Also install Visual Studio Code + Windows Terminal |
 | `-NoPrompt` | Never ask anything — for unattended runs |
+| `-LocalLlmUpstream <url>` | Also install `claude-local`: Claude Code on a self-hosted vLLM model at `<url>` ([tools/claude-local](tools/claude-local/README.md)) |
 
 **Close and reopen PowerShell afterwards** so the new PATH lands. Then continue below.
 Machines that already have the toolchain skip step 0 entirely.
@@ -67,7 +68,7 @@ code, the applicable optional skills enabled, a passing skill audit, and a boot-
 
 | Script | Scope | Runs | Installs |
 | --- | --- | --- | --- |
-| `initial-setup.ps1` | the **machine** | once per laptop | Git, PowerShell 7, Node LTS, Claude Code, uv + Python, just, gh |
+| `initial-setup.ps1` | the **machine** | once per laptop | Git, PowerShell 7, Node LTS, Claude Code, uv + Python, just, gh; `claude-local` on request |
 | `init.ps1` | the **project** | once per project | nothing — it scaffolds files and deletes itself |
 | `setup.ps1` | the **stack** | per project, re-runnable | that stack's toolchain (PHP, JDK, w64devkit, ...) |
 
@@ -93,6 +94,7 @@ scaffolded project ships exactly one `setup.ps1`.
 ```
 project-skeleton/
   initial-setup.ps1         # per-MACHINE bootstrap (step 0) — removed at init
+  tools/claude-local/       # claude-local: Claude Code on a self-hosted vLLM model (step 0 opt-in) — removed at init
   init.ps1                  # the scaffolder (step 2 above) — deletes itself when done
   justfile                  # skeleton DEV recipes (just test) — replaced by the stack's at init
   tests/init.Tests.ps1      # Pester suite locking init.ps1's behavior — removed at init
@@ -130,8 +132,8 @@ copies are deleted afterwards. It scaffolds **all 9 stacks** and covers:
 - **Shared scaffold steps** (asserted in full for `static` and `cli-java`):
   `CLAUDE.md`/`README.md` are created from the templates; `GROUNDING.md` and the
   stack's `NOTES.md` move into `.docs/05-reference/`; the scaffolding removes itself
-  (`stacks/`, `init.ps1`, `initial-setup.ps1`, `gitignore-block.txt`, the skeleton's
-  own `tests/`) leaving exactly one root `setup.ps1`; the
+  (`stacks/`, `init.ps1`, `initial-setup.ps1`, `tools/claude-local/`, `gitignore-block.txt`,
+  the skeleton's own `tests/`) leaving exactly one root `setup.ps1`; the
   gitignore block is merged; **content** tokens (`WHAT_IT_IS`, ...) survive for
   `/ground-project`, and `conventions.md`'s token table is skipped by the fill.
 - **Per-stack token fill** (every stack, driven by the `$stackMatrix` table): the
@@ -148,6 +150,9 @@ copies are deleted afterwards. It scaffolds **all 9 stacks** and covers:
   asserted by re-parsing it with the 5.1 engine, since it runs before PowerShell 7
   exists and the suite's own pwsh host would never catch 5.1-invalid syntax. Plus:
   no tokens, it installs `Microsoft.PowerShell`, and it verifies all eight tools.
+- **`tools/claude-local/install.ps1`:** installs into caller-supplied dirs (launcher,
+  shim, README, a `config.json` holding the upstream, both PATH stubs, one profile
+  line even after a re-run) and parses under 5.1, since `initial-setup.ps1` runs it there.
 
 Requirement: Pester 5+ visible to `pwsh` (the Windows-inbox Pester 3 can't run it):
 

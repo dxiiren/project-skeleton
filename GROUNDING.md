@@ -43,6 +43,14 @@ Scope rule: `initial-setup.ps1` installs what is needed to *start any project in
 family*. Anything stack-specific (PHP, JDK, w64devkit, Composer) belongs in the stack's
 `setup.ps1`, never here.
 
+Opt-in, same script: `-LocalLlmUpstream <url>` also installs **claude-local** from
+`tools/claude-local/` — a launcher that runs the same Claude Code binary against a
+self-hosted vLLM model (Anthropic-compatible `/v1/messages`) through a loopback shim,
+reachable as `claude-local` and as the `just claudel` recipe every stack justfile carries.
+`tools/claude-local/` is scaffolding: `init.ps1` removes it, and a scaffolded project
+installs the launcher with `/setup-claude-local` from the skeleton's raw URL. The server
+address is per machine (`~/.claude/local-llm/config.json`) and never lives in a repo.
+
 ## Scaffold self-test (Pester-locked)
 
 Step 1's observable behavior is **locked by a Pester suite**: `tests/init.Tests.ps1`
@@ -60,7 +68,11 @@ It scaffolds a throwaway `%TEMP%` copy for **every stack in `stacks/`** and asse
 - `initial-setup.ps1` — that it parses under the **5.1 engine** (spawned explicitly:
   the suite's own pwsh host cannot catch 5.1-invalid syntax), carries no tokens,
   installs `Microsoft.PowerShell`, and verifies all eight tools. Plus a scaffold from a
-  clone with the file deleted, proving init's removal step is a no-op when it is absent.
+  clone with the file deleted, proving init's removal step is a no-op when it is absent;
+- `tools/claude-local/install.ps1` — that it installs into caller-supplied dirs (launcher,
+  shim, README, a `config.json` holding the upstream, both PATH stubs, exactly one profile
+  line even after a re-run) and parses under the 5.1 engine, because `initial-setup.ps1`
+  runs it there.
 
 **Adding a stack means adding its `$stackMatrix` row in the same commit** — one row of
 arguments plus the regexes proving its own tokens got filled. Likewise, if you change

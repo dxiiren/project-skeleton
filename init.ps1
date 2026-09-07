@@ -157,6 +157,18 @@ if (Test-Path $initialSetup) {
     Write-Host "[OK] Removed initial-setup.ps1 (the per-machine bootstrap)" -ForegroundColor Green
 }
 
+# tools\claude-local is per-MACHINE tooling (Claude Code on a self-hosted model),
+# installed by initial-setup.ps1 -LocalLlmUpstream or /setup-claude-local -- it never
+# ships with a project. Remove it, then tools\ if that emptied it (an imported project
+# may own other tools). Test-Path guarded like initial-setup.ps1 above.
+$toolsDir    = Join-Path $root "tools"
+$claudeLocal = Join-Path $toolsDir "claude-local"
+if (Test-Path $claudeLocal) {
+    Remove-Item -Recurse -Force $claudeLocal
+    if (-not (Get-ChildItem -Path $toolsDir -Force)) { Remove-Item -Force $toolsDir }
+    Write-Host "[OK] Removed tools\claude-local (the per-machine local-model launcher)" -ForegroundColor Green
+}
+
 # ---------- 5. Fill the mechanical tokens ----------
 $tokens = [ordered]@{
     '@@PROJECT_TITLE@@' = $title

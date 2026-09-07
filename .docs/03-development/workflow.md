@@ -26,7 +26,9 @@ they exist, and what "green" looks like for each.]
 
 Project skills live in `.claude/skills/` (catalog: `.claude/skills/README.md`). Follow
 the relevant skill before writing code. MCP servers are wired via `.mcp.json.stub` →
-git-ignored `.mcp.json` (`/setup-mcp`, `/test-all-mcp`).
+git-ignored `.mcp.json` (`/setup-mcp`, `/test-all-mcp`). `just claudel` runs the same Claude
+Code against the self-hosted vLLM model through `claude-local` (`/setup-claude-local`
+installs it); one endpoint per session, so plain `claude` stays the Anthropic route.
 
 ## Related docs
 

@@ -21,6 +21,7 @@ Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 | Skill                             | What it does                                                                                                             | Model  |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
 | [setup-just](setup-just/SKILL.md) | Install the `just` command runner, fix the Windows winget PATH gap, and verify this repo's recipes list and run.         | sonnet |
+| [setup-claude-local](setup-claude-local/SKILL.md) | Install the `claude-local` launcher (Claude Code on a self-hosted vLLM model through a local shim), prove it with a live print-mode run, and read the shim log before calling anything a defect. | sonnet |
 
 ## Git
 

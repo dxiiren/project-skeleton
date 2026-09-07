@@ -31,6 +31,8 @@
 #   -GitEmail <mail>  Set the GLOBAL git user.email (skipped if one is already configured)
 #   -IncludeExtras    Also install Visual Studio Code + Windows Terminal
 #   -NoPrompt         Never ask anything (for unattended runs)
+#   -LocalLlmUpstream <url>  Also install claude-local: Claude Code on a self-hosted vLLM
+#                     model at <url> (see tools/claude-local/README.md). Opt-in.
 
 [CmdletBinding()]
 param(
@@ -38,6 +40,7 @@ param(
     [string]$Repo = 'https://github.com/dxiiren/project-skeleton.git',
     [string]$GitName,
     [string]$GitEmail,
+    [string]$LocalLlmUpstream,
     [switch]$IncludeExtras,
     [switch]$NoPrompt
 )
@@ -383,12 +386,52 @@ if ($CloneTo) {
     }
 }
 
+# ---------- 12. claude-local (optional): Claude Code on a self-hosted vLLM model ----------
+# Opt-in via -LocalLlmUpstream. The launcher + shim live in tools\claude-local of the
+# skeleton: install from the clone made above, from this script's own clone, or straight
+# from the raw URL (the irm | iex route has no files on disk). The server address goes
+# to %USERPROFILE%\.claude\local-llm\config.json -- never into a repo.
+if ($LocalLlmUpstream) {
+    Write-Host ""
+    Write-Host "Installing claude-local..." -ForegroundColor Cyan
+    $rawBase = $null
+    if ($Repo -match '^https://github\.com/([^/]+)/([^/]+?)(\.git)?/?$') {
+        $rawBase = "https://raw.githubusercontent.com/$($Matches[1])/$($Matches[2])/main/tools/claude-local"
+    }
+    $localTools = $null
+    if ($cloned -and (Test-Path (Join-Path $cloned 'tools\claude-local\install.ps1'))) {
+        $localTools = Join-Path $cloned 'tools\claude-local'
+    } elseif ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot 'tools\claude-local\install.ps1'))) {
+        $localTools = Join-Path $PSScriptRoot 'tools\claude-local'
+    }
+    $savedEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $LASTEXITCODE = 0
+    try {
+        if ($localTools) {
+            & (Join-Path $localTools 'install.ps1') -Upstream $LocalLlmUpstream -Source $localTools
+        } elseif ($rawBase) {
+            $tmpInstaller = Join-Path $env:TEMP 'claude-local-install.ps1'
+            Invoke-WebRequest -UseBasicParsing -Uri "$rawBase/install.ps1" -OutFile $tmpInstaller
+            & $tmpInstaller -Upstream $LocalLlmUpstream -Source $rawBase
+        } else {
+            Write-Host "[WARN] claude-local skipped: no tools\claude-local on disk and -Repo is not a github.com URL." -ForegroundColor Yellow
+        }
+        if ($LASTEXITCODE -ne 0) { Write-Host "[WARN] claude-local install exited $LASTEXITCODE -- run tools\claude-local\install.ps1 by hand." -ForegroundColor Yellow }
+    } catch {
+        Write-Host "[WARN] claude-local install failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+    $ErrorActionPreference = $savedEAP
+}
+
 # ---------- Final verification ----------
 Refresh-Path
 Write-Host ""
 Write-Host "Verifying installations..." -ForegroundColor Cyan
 $missing = @()
-foreach ($tool in @('git','pwsh','node','npm','claude','uv','just','gh')) {
+$tools = @('git','pwsh','node','npm','claude','uv','just','gh')
+if ($LocalLlmUpstream) { $tools += 'claude-local' }
+foreach ($tool in $tools) {
     if (Test-Command $tool) {
         Write-Host "  [OK] $tool" -ForegroundColor Green
     } else {
@@ -419,4 +462,7 @@ Write-Host "[NEXT] 2. Scaffold the project:     .\init.ps1" -ForegroundColor Gra
 Write-Host "[NEXT] 3. Install the stack tools:  pwsh ./setup.ps1" -ForegroundColor Gray
 Write-Host "[NEXT] 4. Authenticate:             gh auth login   then   claude" -ForegroundColor Gray
 Write-Host "[NEXT] 5. Ground the kit:           /ground-project  (inside Claude Code)" -ForegroundColor Gray
+if ($LocalLlmUpstream) {
+    Write-Host "[NEXT] 6. Local model:              claude-local   (or 'just claudel' inside a project)" -ForegroundColor Gray
+}
 Write-Host ""

@@ -1,0 +1,140 @@
+---
+name: setup-claude-local
+description: Use when the developer says 'setup claude local', 'install claude-local', 'run claude on the local model', 'use our vLLM with claude code', 'claude-local not found', or 'just claudel fails' - installs the claude-local launcher (Claude Code on a self-hosted vLLM model through a local shim), proves it with a live print-mode run, and reads the shim log before calling anything a defect.
+model: sonnet
+---
+
+# setup-claude-local — Claude Code on the self-hosted model
+
+`claude-local` runs the **same** Claude Code binary against a self-hosted vLLM model that
+serves the Anthropic Messages API, through a small local shim. `claude` stays on Anthropic;
+`claude-local` (and `just claudel`) use the local server. This skill installs it and proves
+it works with live evidence.
+
+## Trigger
+
+When the developer says any of: "setup claude local", "install claude-local", "run claude
+on the local model", "use our vLLM with claude code", "claude-local not found",
+"just claudel fails", "claude local 400".
+
+---
+
+## What is it?
+
+Four files installed per machine by `tools/claude-local/install.ps1` from the skeleton:
+
+| Path | Role |
+| --- | --- |
+| `~\.claude\local-llm\claude-local.ps1` | launcher: checks the server, starts the shim, sets the gateway env vars for its own process, runs `claude` |
+| `~\.claude\local-llm\shim.py` | loopback proxy on `127.0.0.1:8098`: folds Claude Code's `role: system` turns into user turns (vLLM rejects them) and clamps `max_tokens` to the server's context |
+| `~\.claude\local-llm\config.json` | `upstream` (server base URL), optional `model` / `label` |
+| `~\.local\bin\claude-local{.cmd,}` | PATH entry points; plus a `claude-local` function in the pwsh profile |
+
+Full background, limits and operations: the README installed next to the launcher
+(`~\.claude\local-llm\README.md`, source `tools/claude-local/README.md` in the skeleton).
+
+---
+
+## Step 1 — Is it already installed?
+
+```powershell
+Get-Command claude-local -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+Get-Content ~\.claude\local-llm\config.json
+```
+
+Both print something → skip to **Step 3**. Otherwise continue.
+
+---
+
+## Step 2 — Install
+
+You need the server's base URL (no `/v1`), e.g. `http://vllm-host:8000`. Ask the developer
+if you do not have it; never guess an address. Then, from a clone of the skeleton:
+
+```powershell
+pwsh tools/claude-local/install.ps1 -Upstream http://vllm-host:8000
+```
+
+A scaffolded project no longer carries `tools/` (init.ps1 removes it), so install from the
+skeleton's raw URL instead:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/dxiiren/project-skeleton/main/tools/claude-local/install.ps1))) -Upstream http://vllm-host:8000
+```
+
+Pass = the installer ends with `claude-local installed.` and a `[OK]` line per step. A
+`[WARN] ... not reachable` line is fine when the VPN is down; the launcher re-checks. Then
+**close and reopen the terminal** (new PATH entry and profile function).
+
+---
+
+## Step 3 — Verify with a live run
+
+Print mode exercises the whole chain (launcher → shim → server → tool call) without a TUI:
+
+```powershell
+claude-local -p "Use the Bash tool to run: echo hello-from-local . Then tell me the exact output." --allowedTools "Bash(echo:*)" --output-format json
+```
+
+Pass = the JSON has `"is_error":false`, `"num_turns":2` and the result quotes
+`hello-from-local`. The grey first line names the model, context length and shim URL.
+
+Then read the shim log — it is the source of truth for what was sent:
+
+```powershell
+Get-Content ~\.claude\local-llm\logs\shim.log -Tail 5
+```
+
+A healthy line looks like `POST /v1/messages?beta=true model=... stream=True msgs=2 tools=62 folded_system=1 prompt=27271(129ms) => 200 3285B 4.3s`.
+
+---
+
+## Step 4 — Report back
+
+```
+claude-local Setup Complete
+================================
+Upstream:   {url from config.json}
+Model:      {id from the grey launch line}
+Context:    {max_model_len} tokens (baseline prompt ~{prompt=N from shim.log})
+Shim:       http://127.0.0.1:8098  (pid {logs/shim.pid})
+
+Live run:   claude-local -p ... -> is_error false, tool call round-trip PASS
+
+Next: claude-local   (or: just claudel)
+```
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| `cannot reach <upstream>/v1/models` | The server is on the VPN. Connect it, then retry. `ping` is not a liveness test; probe `/v1/models`. |
+| `no upstream configured` | Re-run `install.ps1 -Upstream <url>`, or set `LOCAL_LLM_UPSTREAM` for the shell. |
+| `API Error: 400 ... role ... 'user' or 'assistant'` | Claude Code is talking to vLLM **without** the shim. Check `ANTHROPIC_BASE_URL` is `http://127.0.0.1:8098` in the session (`claude-local` sets it; a stale `claude` alias does not). |
+| `The model ... does not exist` (404) | The model id must match `/v1/models` exactly. Clear a stale `model` in `config.json` or `LOCAL_LLM_MODEL`. |
+| `Prompt is too long` before you typed anything | The first request already exceeds the server's `max_model_len`: MCP tool schemas dominate (`tools=N` in `shim.log`; 11 servers = 230 tools = ~113k tokens). Relaunch with `claude-local --no-mcp` (drops every MCP server), or pass a small `--mcp-config` to keep one or two, and trim a CLAUDE.md over 40k chars. The real fix is a larger `--max-model-len` on the server. |
+| `shim did not come up` | Read `~\.claude\local-llm\logs\shim.err`. Usually Python missing: `uv python install` or install Python 3. |
+| `claude-local` not found after install | New PATH entry / profile function need a **new** terminal. IDE terminals: close all tabs or restart the IDE. |
+| The classifier keeps denying actions in auto mode | The local model judges permissions too. Use `claude-local --permission-mode default`. |
+
+---
+
+## Anti-patterns
+
+- **Never** call the endpoint a defect from a truncated tool call — check `finish_reason`
+  and `max_tokens` first; a clamped `max_tokens` shows in `shim.log`.
+- **Never** point plain `claude` at the local server by exporting `ANTHROPIC_BASE_URL`
+  globally — every session would lose Anthropic. The launcher scopes it to one process.
+- **Never** commit the server address into the skeleton — it is per machine, in `config.json`.
+- **Never** edit `shim.py` in `~\.claude\local-llm\` directly; change `tools/claude-local/`
+  in the skeleton and re-run the installer.
+
+---
+
+## Evolution Log
+
+- Shipped with the project-skeleton kit after wiring a Qwen 27B vLLM box (vLLM 0.19.1,
+  Claude Code 2.1.263). The system-role 400, the unmatched retry wording, and the
+  `max_tokens` 500 are reproduced failures, not theory; the shim exists for exactly those.

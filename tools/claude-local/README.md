@@ -67,7 +67,12 @@ The launcher sets, for its own process only:
 - `ANTHROPIC_MODEL` and the four `ANTHROPIC_DEFAULT_*_MODEL` tier aliases -> the vLLM model id, so `/model opus` etc. never leak to Anthropic.
 - `ANTHROPIC_CUSTOM_MODEL_OPTION` -> a labelled row in the `/model` picker.
 - `CLAUDE_CODE_MAX_CONTEXT_TOKENS` -> `max_model_len` read live from `/v1/models`, so auto-compact fires at the right size.
-- `CLAUDE_CODE_MAX_OUTPUT_TOKENS` (16384 or a quarter of the context), `CLAUDE_CODE_ATTRIBUTION_HEADER=0`, `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`.
+- `CLAUDE_CODE_MAX_OUTPUT_TOKENS` (16384, or an eighth of the context on small servers, since Claude Code keeps that reservation out of the usable window), `CLAUDE_CODE_ATTRIBUTION_HEADER=0`, `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`.
+
+The same values are also written to `session-settings.json` and passed as `--settings`,
+because command-line settings outrank a project's `.claude/settings.json` `env` block. A
+project that pins `CLAUDE_CODE_MAX_OUTPUT_TOKENS` to 100000 for Anthropic's 200k window would
+otherwise override the launcher and hit "Context limit reached" after the first reply.
 
 Model id and context length are discovered from the server at launch, so a model swap on
 the server needs no reinstall. Per-shell overrides: `LOCAL_LLM_UPSTREAM`, `LOCAL_LLM_MODEL`.

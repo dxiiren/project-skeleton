@@ -71,7 +71,9 @@ if (-not $Model -and $cfg -and $cfg.model) { $Model = $cfg.model }
 if (-not $Model) { $Model = $models.data[0].id }
 $ContextLen = 65536
 if ($models.data[0].max_model_len) { $ContextLen = [int]$models.data[0].max_model_len }
-$MaxOutput = [Math]::Min(16384, [int]($ContextLen / 4))
+# Claude Code keeps max-output tokens out of the usable window, so a small server (64k)
+# gets an eighth (8k) rather than a quarter: a 40k baseline prompt otherwise leaves no room.
+$MaxOutput = [Math]::Min(16384, [int]($ContextLen / 8))
 $Label = ''
 if ($cfg -and $cfg.label) { $Label = $cfg.label }
 if (-not $Label) {
@@ -102,22 +104,30 @@ if (-not (Get-Models $ShimUrl 2)) {
     }
 }
 
-# 3. Gateway variables (this process and its children only).
-$env:ANTHROPIC_BASE_URL                        = $ShimUrl
-$env:ANTHROPIC_AUTH_TOKEN                      = 'local-vllm'   # vLLM ignores it; Claude Code needs *some* credential set
-$env:ANTHROPIC_MODEL                           = $Model
-$env:ANTHROPIC_DEFAULT_OPUS_MODEL              = $Model         # /model opus|sonnet|haiku|fable all resolve locally
-$env:ANTHROPIC_DEFAULT_SONNET_MODEL            = $Model
-$env:ANTHROPIC_DEFAULT_HAIKU_MODEL             = $Model
-$env:ANTHROPIC_DEFAULT_FABLE_MODEL             = $Model
-$env:ANTHROPIC_CUSTOM_MODEL_OPTION             = $Model         # its own row in the /model picker
-$env:ANTHROPIC_CUSTOM_MODEL_OPTION_NAME        = $Label
-$env:ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = "Self-hosted at $Upstream via claude-local shim, $ContextLen context"
-$env:CLAUDE_CODE_MAX_CONTEXT_TOKENS            = "$ContextLen"  # unrecognised model id -> tell Claude Code the real window
-$env:CLAUDE_CODE_MAX_OUTPUT_TOKENS             = "$MaxOutput"
-$env:CLAUDE_CODE_ATTRIBUTION_HEADER            = '0'            # vLLM would feed the attribution block to the model
-$env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC  = '1'
+# 3. Gateway variables. Set in this process (child processes and tools see them) AND handed
+#    to Claude Code as command-line settings (--settings), which outrank a project's
+#    .claude/settings.json "env" block. A project that pins CLAUDE_CODE_MAX_OUTPUT_TOKENS
+#    for Anthropic's 200k window would otherwise override the caps that fit this server.
+$gatewayEnv = [ordered]@{
+    ANTHROPIC_BASE_URL                        = $ShimUrl
+    ANTHROPIC_AUTH_TOKEN                      = 'local-vllm'    # vLLM ignores it; Claude Code needs *some* credential set
+    ANTHROPIC_MODEL                           = $Model
+    ANTHROPIC_DEFAULT_OPUS_MODEL              = $Model          # /model opus|sonnet|haiku|fable all resolve locally
+    ANTHROPIC_DEFAULT_SONNET_MODEL            = $Model
+    ANTHROPIC_DEFAULT_HAIKU_MODEL             = $Model
+    ANTHROPIC_DEFAULT_FABLE_MODEL             = $Model
+    ANTHROPIC_CUSTOM_MODEL_OPTION             = $Model          # its own row in the /model picker
+    ANTHROPIC_CUSTOM_MODEL_OPTION_NAME        = $Label
+    ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = "Self-hosted at $Upstream via claude-local shim, $ContextLen context"
+    CLAUDE_CODE_MAX_CONTEXT_TOKENS            = "$ContextLen"   # unrecognised model id -> tell Claude Code the real window
+    CLAUDE_CODE_MAX_OUTPUT_TOKENS             = "$MaxOutput"
+    CLAUDE_CODE_ATTRIBUTION_HEADER            = '0'             # vLLM would feed the attribution block to the model
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC  = '1'
+}
+foreach ($k in $gatewayEnv.Keys) { Set-Item -Path "Env:$k" -Value $gatewayEnv[$k] }
 Remove-Item Env:ANTHROPIC_API_KEY -ErrorAction SilentlyContinue
+$sessionSettings = Join-Path $Root 'session-settings.json'
+[System.IO.File]::WriteAllText($sessionSettings, (@{ env = $gatewayEnv } | ConvertTo-Json))
 
 Write-Host "claude-local: $Model @ $Upstream (context $ContextLen, max output $MaxOutput) via $ShimUrl" -ForegroundColor DarkGray
 
@@ -134,6 +144,11 @@ if ($claudeArgs -contains '--no-mcp') {
     Write-Host "claude-local: MCP servers disabled for this session (--no-mcp)" -ForegroundColor DarkGray
 } elseif ($ContextLen -lt 100000) {
     Write-Host "claude-local: small context - if you see 'Prompt is too long', relaunch with --no-mcp" -ForegroundColor DarkGray
+}
+if ($claudeArgs -contains '--settings') {
+    Write-Host "claude-local: you passed --settings, so the launcher's session-settings.json is not added; keep the context/output caps in yours" -ForegroundColor Yellow
+} else {
+    $claudeArgs += @('--settings', $sessionSettings)
 }
 
 # 5. Run Claude Code.

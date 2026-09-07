@@ -39,21 +39,28 @@ Full background, limits and operations: the README installed next to the launche
 
 ```powershell
 Get-Command claude-local -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
-Get-Content ~\.claude\local-llm\config.json
+claude-local --list
 ```
 
-Both print something → skip to **Step 3**. Otherwise continue.
+Both print something → skip to **Step 3** (or to Step 2 to add an endpoint). Otherwise continue.
 
 ---
 
-## Step 2 — Install
+## Step 2 — Install or add an endpoint
 
 You need the server's base URL (no `/v1`), e.g. `http://vllm-host:8000`. Ask the developer
-if you do not have it; never guess an address. Then, from a clone of the skeleton:
+if you do not have it; never guess an address. Each installer run adds or updates ONE named
+endpoint (`-Name`, default `main`); the first one becomes the default. From a clone:
 
 ```powershell
 pwsh tools/claude-local/install.ps1 -Upstream http://vllm-host:8000
+pwsh tools/claude-local/install.ps1 -Name ollama -Upstream http://127.0.0.1:11434 -Model qwen3.5:4b -Context 32768
+pwsh tools/claude-local/install.ps1 -Name ollama -Default        # switch the default
 ```
+
+Ollama rules: pin `-Model` (it lists every pulled model; the model must support tools) and
+set `-Context` to the same value as `OLLAMA_CONTEXT_LENGTH` on the Ollama side, because Ollama
+never reports it and truncates prompts silently when they exceed it.
 
 A scaffolded project no longer carries `tools/` (init.ps1 removes it), so install from the
 skeleton's raw URL instead:
@@ -62,22 +69,28 @@ skeleton's raw URL instead:
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/dxiiren/project-skeleton/main/tools/claude-local/install.ps1))) -Upstream http://vllm-host:8000
 ```
 
-Pass = the installer ends with `claude-local installed.` and a `[OK]` line per step. A
-`[WARN] ... not reachable` line is fine when the VPN is down; the launcher re-checks. Then
-**close and reopen the terminal** (new PATH entry and profile function).
+Pass = the installer ends with `claude-local installed.`, one `[OK] * name -> url` line per
+endpoint (the `*` marks the default) and a `[OK]` line per step. A `[WARN] ... not reachable`
+line is fine when the VPN is down; the launcher re-checks. Then **close and reopen the
+terminal** (new PATH entry and profile function).
 
 ---
 
 ## Step 3 — Verify with a live run
 
-Print mode exercises the whole chain (launcher → shim → server → tool call) without a TUI:
+First the roster, then print mode, which exercises the whole chain (launcher → shim → server →
+tool call) without a TUI. Repeat the print-mode run with `-e <name>` for each endpoint that matters:
 
 ```powershell
+claude-local --list
 claude-local -p "Use the Bash tool to run: echo hello-from-local . Then tell me the exact output." --allowedTools "Bash(echo:*)" --output-format json
+claude-local -e ollama -p "Use the Bash tool to run: echo hello-from-local . Then tell me the exact output." --allowedTools "Bash(echo:*)" --output-format json
 ```
 
-Pass = the JSON has `"is_error":false`, `"num_turns":2` and the result quotes
-`hello-from-local`. The grey first line names the model, context length and shim URL.
+Pass = `--list` shows the endpoint `up` with a model and context, and the JSON has
+`"is_error":false`, `"num_turns":2` and a result quoting `hello-from-local`. The grey first
+line names the endpoint, model, context length and shim URL; a yellow line means the default
+was down and the launcher fell back.
 
 Then read the shim log — it is the source of truth for what was sent:
 
@@ -110,8 +123,10 @@ Next: claude-local   (or: just claudel)
 
 | Problem | Fix |
 | --- | --- |
-| `cannot reach <upstream>/v1/models` | The server is on the VPN. Connect it, then retry. `ping` is not a liveness test; probe `/v1/models`. |
-| `no upstream configured` | Re-run `install.ps1 -Upstream <url>`, or set `LOCAL_LLM_UPSTREAM` for the shell. |
+| `no endpoint reachable` / `endpoint 'x' ... is unreachable` | The server is down or on the VPN. `claude-local --list` shows which ones answer; `ping` is not a liveness test, `/v1/models` is. |
+| `no endpoint configured` | Re-run `install.ps1 -Upstream <url>`, or set `LOCAL_LLM_UPSTREAM` for the shell. |
+| Ollama answers but replies ignore the start of the conversation, or the model seems to forget the system prompt | Ollama truncated the prompt to its `OLLAMA_CONTEXT_LENGTH`. Set that to 32768 or more on the Ollama side and record the same number with `install.ps1 -Name ollama -Context N`. |
+| Ollama answers very slowly | Another model server (a vLLM container) already holds the GPU memory, so Ollama runs on CPU. Stop one of them; an 8 GB laptop GPU fits one at a time. |
 | `API Error: 400 ... role ... 'user' or 'assistant'` | Claude Code is talking to vLLM **without** the shim. Check `ANTHROPIC_BASE_URL` is `http://127.0.0.1:8098` in the session (`claude-local` sets it; a stale `claude` alias does not). |
 | `The model ... does not exist` (404) | The model id must match `/v1/models` exactly. Clear a stale `model` in `config.json` or `LOCAL_LLM_MODEL`. |
 | `Prompt is too long` before you typed anything | The first request already exceeds the server's `max_model_len`: MCP tool schemas dominate (`tools=N` in `shim.log`; 11 servers = 230 tools = ~113k tokens). Relaunch with `claude-local --no-mcp` (drops every MCP server), or pass a small `--mcp-config` to keep one or two, and trim a CLAUDE.md over 40k chars. The real fix is a larger `--max-model-len` on the server. |

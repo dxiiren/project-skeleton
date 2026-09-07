@@ -537,12 +537,30 @@ Describe 'tools/claude-local/install.ps1 — the opt-in local-model launcher' {
         $claudeDir   = Join-Path $copy '_home\.claude\local-llm'
         $binDir      = Join-Path $copy '_home\.local\bin'
         $profileFile = Join-Path $copy '_home\profile.ps1'
-        $installArgs = @('-Upstream', 'http://127.0.0.1:9/', '-ClaudeDir', $claudeDir, '-BinDir', $binDir,
-                         '-ProfilePath', $profileFile, '-SkipProbe')
+        $dirs        = @('-ClaudeDir', $claudeDir, '-BinDir', $binDir, '-ProfilePath', $profileFile, '-SkipProbe')
+        $installArgs = @('-Upstream', 'http://127.0.0.1:9/') + $dirs
         $first      = & pwsh -NoProfile -File $installer @installArgs 2>&1 | Out-String
         $firstCode  = $LASTEXITCODE
         $second     = & pwsh -NoProfile -File $installer @installArgs 2>&1 | Out-String
         $secondCode = $LASTEXITCODE
+        # A second, named endpoint with an explicit context (what an Ollama entry looks like) ...
+        $thirdArgs  = @('-Name', 'second', '-Upstream', 'http://127.0.0.1:10', '-Model', 'tiny:latest', '-Context', '4096') + $dirs
+        $third      = & pwsh -NoProfile -File $installer @thirdArgs 2>&1 | Out-String
+        $thirdCode  = $LASTEXITCODE
+        # ... then promoted to default without repeating its upstream.
+        $fourthArgs = @('-Name', 'second', '-Default') + $dirs
+        $fourth     = & pwsh -NoProfile -File $installer @fourthArgs 2>&1 | Out-String
+        $fourthCode = $LASTEXITCODE
+        $cfg = Get-Content (Join-Path $claudeDir 'config.json') -Raw | ConvertFrom-Json
+
+        # Migration: a pre-endpoints config.json ({ upstream, model, label }) in a fresh dir.
+        $legacyDir = Join-Path $copy '_home2\.claude\local-llm'
+        New-Item -ItemType Directory -Force -Path $legacyDir | Out-Null
+        [System.IO.File]::WriteAllText((Join-Path $legacyDir 'config.json'), '{ "upstream": "http://127.0.0.1:11/", "model": "old:model", "label": "" }')
+        $legacyArgs = @('-ClaudeDir', $legacyDir, '-BinDir', (Join-Path $copy '_home2\.local\bin'), '-NoProfileEdit', '-SkipProbe')
+        $legacy     = & pwsh -NoProfile -File $installer @legacyArgs 2>&1 | Out-String
+        $legacyCode = $LASTEXITCODE
+        $legacyCfg  = Get-Content (Join-Path $legacyDir 'config.json') -Raw | ConvertFrom-Json
     }
 
     It 'completes successfully, twice (idempotent)' {
@@ -551,12 +569,30 @@ Describe 'tools/claude-local/install.ps1 — the opt-in local-model launcher' {
         $first      | Should -Match 'claude-local installed'
     }
 
-    It 'installs the launcher, shim and README next to a config.json holding the upstream' {
+    It 'installs the launcher, shim and README next to a config.json with the endpoint as "main"' {
         Join-Path $claudeDir 'claude-local.ps1' | Should -Exist
         Join-Path $claudeDir 'shim.py'          | Should -Exist
         Join-Path $claudeDir 'README.md'        | Should -Exist
-        $cfg = Get-Content (Join-Path $claudeDir 'config.json') -Raw | ConvertFrom-Json
-        $cfg.upstream | Should -Be 'http://127.0.0.1:9'   # trailing slash trimmed
+        $cfg.endpoints.main.upstream | Should -Be 'http://127.0.0.1:9'   # trailing slash trimmed
+    }
+
+    It 'keeps both endpoints, records the second one''s model and context, and honours -Default' {
+        $thirdCode  | Should -Be 0 -Because $third
+        $fourthCode | Should -Be 0 -Because $fourth
+        @($cfg.endpoints.PSObject.Properties.Name) | Should -Be @('main', 'second')
+        $cfg.endpoints.second.upstream | Should -Be 'http://127.0.0.1:10'
+        $cfg.endpoints.second.model    | Should -Be 'tiny:latest'
+        $cfg.endpoints.second.context  | Should -Be 4096
+        $cfg.endpoints.main.upstream   | Should -Be 'http://127.0.0.1:9'    # untouched by the later runs
+        $cfg.default | Should -Be 'second'
+        $third | Should -Match '\* main'      # main was still the default after the third run
+    }
+
+    It 'migrates a pre-endpoints config.json into endpoints.main' {
+        $legacyCode | Should -Be 0 -Because $legacy
+        $legacyCfg.default | Should -Be 'main'
+        $legacyCfg.endpoints.main.upstream | Should -Be 'http://127.0.0.1:11'
+        $legacyCfg.endpoints.main.model    | Should -Be 'old:model'
     }
 
     It 'writes the .cmd and Git Bash stubs pointing at the launcher' {

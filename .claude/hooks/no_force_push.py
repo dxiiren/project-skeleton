@@ -8,8 +8,10 @@ blocks when, after `git [global options] push`, it sees `--force`/`--force-with-
 `:ref` deletion, a refspec starting with `+`, a `-c <remote>.push=+...` config refspec, or any
 of these inside a quoted sub-command (`bash -c '...'`), or a `git config` that arms a later push
 (`alias.x 'push -f'`, `remote.o.push +...`). Also: unambiguous prefixes of the long options
-(`--m`, `--mirr`), `remote.<name>.mirror` set by `-c` or `git config`, a PowerShell `@splat`, `git send-pack`, `xargs git push`, and a `$VAR`/`$(...)` argument (except the
-current-branch substitutions). Wired for the Bash AND PowerShell tools. Known limits: an alias ALREADY in the user's git config,
+(`--m`, `--mirr`), `remote.<name>.mirror` set by `-c`, `--config-env`, `GIT_CONFIG_KEY_n` or `git config`,
+`git remote add --mirror`, a PowerShell `@splat`, `git send-pack`, `xargs git push`, and a `$VAR`/`$(...)` argument (except the
+current-branch substitutions). Wired for the Bash AND PowerShell tools, on EVERY command (no text pre-filter -
+a `*push*` filter once hid `send-pack` and `git config` from it). Known limits: an alias ALREADY in the user's git config,
 a push run from inside a script file, and a git binary renamed or reached through another
 program cannot be seen in the command text. GitHub branch protection is the server-side backstop.
 Cases: test_no_force_push.py beside this file (`python .claude/hooks/test_no_force_push.py`). Exit 2 = blocked (stderr goes to the model).
@@ -67,6 +69,17 @@ def why_forced(args):
     return None
 
 
+def forcing_key(key, val):
+    key = key.lower()
+    if key.startswith("alias.") and "push" in val:
+        return "alias"
+    if key.endswith(".push") and val.lstrip().startswith("+"):
+        return "forced refspec"
+    if key.startswith("remote.") and key.endswith(".mirror"):
+        return "mirror"
+    return None
+
+
 def forcing_config(args):
     """`git config alias.x 'push -f'` or `git config remote.o.push +refs/...` arms a LATER plain command."""
     words = []
@@ -88,7 +101,13 @@ def forcing_config(args):
     return None
 
 
+GIT_CONFIG_ENV = re.compile(r"GIT_CONFIG_(?:KEY_\d+|PARAMETERS)\s*=\s*['\"]?([^\s'\"]+)", re.I)
+
+
 def check(command, depth=0):
+    for m in GIT_CONFIG_ENV.finditer(command):
+        if forcing_key(m.group(1).split("=", 1)[0], "push +"):
+            return "GIT_CONFIG_* " + m.group(1) + " (config from the environment)"
     t = tokens(command)
     i = 0
     while i < len(t):
@@ -101,6 +120,11 @@ def check(command, depth=0):
         if is_git(tok):
             j = i + 1
             while j < len(t) and t[j].startswith("-") and t[j] not in SEPARATORS:
+                if t[j].startswith("--config-env"):
+                    spec = t[j].split("=", 1)[1] if "=" in t[j] else (t[j + 1] if j + 1 < len(t) else "")
+                    key = spec.split("=", 1)[0]
+                    if forcing_key(key, "push +"):
+                        return t[j] + " (config from the environment)"
                 if t[j] == "-c" and j + 1 < len(t):
                     key, _, val = t[j + 1].partition("=")
                     # a forced refspec or force flag smuggled in through config
@@ -124,6 +148,12 @@ def check(command, depth=0):
                 bad = forcing_config(t[j + 1:])
                 if bad:
                     return bad
+            if j < len(t) and t[j] == "remote":
+                for a in t[j + 1:]:
+                    if a in SEPARATORS:
+                        break
+                    if a.startswith("--mirror"):
+                        return "git remote " + a + " (mirror remote)"
         i += 1
     return None
 

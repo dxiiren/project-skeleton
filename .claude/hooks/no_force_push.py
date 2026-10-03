@@ -9,7 +9,8 @@ blocks when, after `git [global options] push`, it sees `--force`/`--force-with-
 of these inside a quoted sub-command (`bash -c '...'`), or a `git config` that arms a later push
 (`alias.x 'push -f'`, `remote.o.push +...`). Also: unambiguous prefixes of the long options
 (`--m`, `--mirr`), `remote.<name>.mirror` set by `-c`, `--config-env`, `GIT_CONFIG_KEY_n` or `git config`,
-`git remote add --mirror`, a PowerShell `@splat`, `git send-pack`, `xargs git push`, and a `$VAR`/`$(...)` argument (except the
+`git remote add --mirror`, the word `mirror` anywhere in a git config/remote/push command,
+any `GIT_CONFIG_*` override next to git, PowerShell backtick escapes, a PowerShell `@splat`, `git send-pack`, `xargs git push`, and a `$VAR`/`$(...)` argument (except the
 current-branch substitutions). Wired for the Bash AND PowerShell tools, on EVERY command (no text pre-filter -
 a `*push*` filter once hid `send-pack` and `git config` from it). Known limits: an alias ALREADY in the user's git config,
 a push run from inside a script file, and a git binary renamed or reached through another
@@ -81,30 +82,27 @@ def forcing_key(key, val):
 
 
 def forcing_config(args):
-    """`git config alias.x 'push -f'` or `git config remote.o.push +refs/...` arms a LATER plain command."""
+    """`git config [any options] alias.x 'push -f'` / `remote.o.push +...` arms a LATER plain command."""
     words = []
     for a in args:
         if a in SEPARATORS:
             break
-        if not a.startswith("-"):
-            words.append(a)
-    if words and words[0] in ("set", "--add"):
-        words = words[1:]
-    if len(words) >= 2:
-        key, val = words[0].lower(), " ".join(words[1:])
-        if key.startswith("alias.") and "push" in val:
-            return "git config " + words[0] + " (push alias)"
-        if key.endswith(".push") and val.lstrip().startswith("+"):
-            return "git config " + words[0] + " " + val
-        if key.startswith("remote.") and key.endswith(".mirror"):
-            return "git config " + words[0] + " (mirror push)"
+        words.append(a)
+    for n, w in enumerate(words):
+        rest = " ".join(words[n + 1:])
+        if forcing_key(w.split("=", 1)[0], rest if "=" not in w else w.split("=", 1)[1] + " " + rest):
+            return "git config " + w
     return None
 
 
+GIT_CONFIG_NAME = re.compile(r"^(?:\$env:)?GIT_CONFIG_(?:KEY_\d+|VALUE_\d+|COUNT|PARAMETERS)\b", re.I)
 GIT_CONFIG_ENV = re.compile(r"GIT_CONFIG_(?:KEY_\d+|PARAMETERS)\s*=\s*['\"]?([^\s'\"]+)", re.I)
 
 
 def check(command, depth=0):
+    command = command.replace("`", "")  # PowerShell escape: pu`sh runs as push (a bash backtick flag stays visible)
+    if re.search(r"GIT_CONFIG_(?:KEY_\d+|COUNT|PARAMETERS)", command, re.I) and re.search(r"\bgit\b", command, re.I):
+        return "GIT_CONFIG_* override (config from the environment)"
     for m in GIT_CONFIG_ENV.finditer(command):
         if forcing_key(m.group(1).split("=", 1)[0], "push +"):
             return "GIT_CONFIG_* " + m.group(1) + " (config from the environment)"
@@ -118,6 +116,16 @@ def check(command, depth=0):
             if bad:
                 return bad
         if is_git(tok):
+            end = next((n for n in range(i + 1, len(t)) if t[n] in SEPARATORS), len(t))
+            start = max([n for n in range(i) if t[n] in SEPARATORS] + [-1]) + 1
+            seg = [x.lower() for x in t[i + 1:end]]
+            if any(GIT_CONFIG_NAME.match(x) for x in t[start:i]):
+                return "GIT_CONFIG_* override in front of git (config from the environment)"
+            sub = next((x for n, x in enumerate(seg) if not x.startswith("-")
+                        and not (n > 0 and seg[n - 1] in GIT_OPTS_WITH_VALUE)), "")
+            risky_globals = any(x.startswith(("-c", "--config-env")) for x in seg[:seg.index(sub)] if sub) if sub else False
+            if (sub in ("config", "remote", "push", "send-pack") or risky_globals) and any("mirror" in x for x in seg):
+                return "mirror (any spelling of a mirror remote or push)"
             j = i + 1
             while j < len(t) and t[j].startswith("-") and t[j] not in SEPARATORS:
                 if t[j].startswith("--config-env"):

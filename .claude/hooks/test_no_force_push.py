@@ -35,6 +35,10 @@ BLOCK = [
     "M=true git --config-env=remote.origin.mirror=M push origin", "git --config-env remote.origin.mirror=M push origin",
     "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.mirror GIT_CONFIG_VALUE_0=true git push origin",
     "git p\\ush -f origin main",
+    "git config -f .git/config remote.origin.mirror true", "git config --type bool remote.origin.mirror true",
+    "git config --file x remote.origin.push +refs/heads/a:refs/heads/a", "git config --local alias.q 'push -f'",
+    "GIT_CONFIG_PARAMETERS=\"'remote.origin.mirror'='true'\" git push origin", "git pu`sh --force origin topic",
+    "git config remote.origin.MIRROR true", "$env:GIT_CONFIG_PARAMETERS=\"'remote.o.mirror'='true'\"; git push o",
 ]
 ALLOW = [
     "git push", "git push -u origin feat/x", "git push --follow-tags", "git push -v origin main", "git -C . push origin main",
@@ -46,7 +50,9 @@ ALLOW = [
     "git push --porcelain origin main", "git push --no-verify origin x", "git push --tags origin",
     "ls | xargs echo && git push origin main",
     "git remote add origin https://example.invalid/x.git", "git remote -v", "git config remote.origin.url x",
-    "git --config-env=user.name=N commit -m x", "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=a git push",
+    "git --config-env=user.name=N commit -m x",
+    "git add scripts/state-mirror.sh", "git commit -m 'docs: mirror notes'", "git log -- scripts/state-mirror.sh",
+    "git config --get remote.origin.url", "git config -f .gitmodules submodule.x.url y",
 ]
 miss = [c for c in BLOCK if not nfp.check(c)] + [c for c in ALLOW if nfp.check(c)]
 

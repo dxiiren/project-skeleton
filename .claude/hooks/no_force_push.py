@@ -28,6 +28,22 @@ SEPARATORS = {"&&", "||", ";", "|", "&", "(", ")", "\n"}
 BAD_LONG = ("--force", "--force-with-lease", "--force-if-includes", "--mirror", "--delete", "--prune")
 
 
+def split_lines(command):
+    """Turn newlines outside quotes into `;` so each line is its own command."""
+    out, quote = [], None
+    for ch in command:
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "'\"":
+            quote = ch
+        elif ch == "\n":
+            out.append(" ; ")
+            continue
+        out.append(ch)
+    return "".join(out)
+
+
 def tokens(command):
     lex = shlex.shlex(command, posix=True, punctuation_chars=";&|()")
     lex.whitespace_split = True
@@ -102,6 +118,7 @@ GIT_CONFIG_ENV = re.compile(r"GIT_CONFIG_(?:KEY_\d+|PARAMETERS)\s*=\s*['\"]?([^\
 
 def check(command, depth=0):
     command = CURRENT_BRANCH.sub("CURRENT_BRANCH", command)
+    command = split_lines(command.replace("\\\n", " "))  # a backslash-newline continues the line
     command = command.replace("`", "")  # PowerShell escape: pu`sh runs as push (a bash backtick flag stays visible)
     if re.search(r"GIT_CONFIG_(?:KEY_\d+|COUNT|PARAMETERS)", command, re.I) and re.search(r"\bgit\b", command, re.I):
         return "GIT_CONFIG_* override (config from the environment)"
@@ -113,7 +130,8 @@ def check(command, depth=0):
     while i < len(t):
         tok = t[i]
         # a quoted sub-command (`bash -c 'git push -f'`, `sh -c "..."`) is scanned as a command too
-        if depth < 3 and any(c.isspace() for c in tok) and "git" in tok.lower():
+        runs_it = i > 0 and t[i - 1].lower() in ("-c", "-lc", "-command", "eval", "invoke-expression", "iex")
+        if depth < 3 and runs_it and any(c.isspace() for c in tok) and "git" in tok.lower():
             bad = check(tok, depth + 1)
             if bad:
                 return bad
@@ -131,8 +149,11 @@ def check(command, depth=0):
                     return opt + " " + val + " (mirror config)"
                 k += 2 if opt in GIT_OPTS_WITH_VALUE else 1
             sub = raw[k] if k < len(raw) else ""
-            if sub in ("config", "remote", "push", "send-pack") and any("mirror" in x.lower() for x in raw[k:]):
+            rest = [x.lower() for x in raw[k + 1:]]
+            if sub in ("remote", "push", "send-pack") and any(x.startswith("--") and "mirror" in x for x in rest):
                 return "mirror (any spelling of a mirror remote or push)"
+            if sub == "config" and any(".mirror" in x for x in rest):
+                return "mirror (remote.<name>.mirror config)"
             j = i + 1
             while j < len(t) and t[j].startswith("-") and t[j] not in SEPARATORS:
                 if t[j].startswith("--config-env"):

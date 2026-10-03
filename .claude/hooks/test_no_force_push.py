@@ -39,7 +39,11 @@ BLOCK = [
     "git config --file x remote.origin.push +refs/heads/a:refs/heads/a", "git config --local alias.q 'push -f'",
     "GIT_CONFIG_PARAMETERS=\"'remote.origin.mirror'='true'\" git push origin", "git pu`sh --force origin topic",
     "git config remote.origin.MIRROR true", "bash -c 'cd ../o && git config remote.origin.mirror true'",
-    "git -c remote.o.mirror=true push o", "git push origin feat/a `\n  --force-with-lease",
+    "git -c remote.o.mirror=true push o",
+    "git fetch origin\n# History was rewritten, so we've to overwrite the remote\ngit push --force-with-lease origin feat\n# Verify it's there\ngit log origin/feat -1",
+    "cd repo # it's the worktree\ngit push --delete origin old-branch # remove the PR's branch",
+    "bash -s <<'EOF'\ngit push --force origin x\nEOF", "sh <<EOF\ngit push origin :old\nEOF",
+    "cmd /c \"git push --force origin x\"", "cmd.exe /c \"git push --delete origin x\"", "cmd //c \"git push -f origin x\"", "git push origin feat/a `\n  --force-with-lease",
     "git push origin feat/a `\r\n  --force", "cat <<'EOF'\nhello\nEOF\ngit push -f origin x", "git push -u origin feat/x \\\n  --force-with-lease",
     "powershell -Command \"git push --force origin x\"", "iex 'git push -f origin x'", "$env:GIT_CONFIG_PARAMETERS=\"'remote.o.mirror'='true'\"; git push o",
 ]
@@ -67,6 +71,8 @@ ALLOW = [
     "git commit -F - <<'EOF2'\nfix: guard refuses git push --force now\nEOF2",
     "gh pr create --title x --body-file - <<'EOF'\nrefuses git push -f and git push --mirror\nEOF",
     "git push -u origin feat/x\ngh pr create --body-file - <<EOF\n- git push --force is refused\nEOF\necho ok",
+    "git status # what's changed?\ngit push -u origin feat/x # it's ready", "echo '#not a comment' && git push origin x",
+    "git log --grep='#12' --oneline", "cat <<EOF > notes.md\ngit push --force is refused here\nEOF",
 ]
 miss = [c for c in BLOCK if not nfp.check(c)] + [c for c in ALLOW if nfp.check(c)]
 

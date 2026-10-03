@@ -28,6 +28,7 @@ SEPARATORS = {"&&", "||", ";", "|", "&", "(", ")", "\n"}
 BAD_LONG = ("--force", "--force-with-lease", "--force-if-includes", "--mirror", "--delete", "--prune")
 
 
+SHELL_FED = re.compile(r"(?:^|[\s;|&(])(?:bash|sh|zsh|dash|ksh|pwsh|powershell|cmd)(?:\.exe)?\b[^|;&]*$", re.I)
 HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 
 
@@ -43,24 +44,35 @@ def drop_heredoc_bodies(command):
             continue
         out.append(line)
         m = HEREDOC.search(line)
-        if m:
+        if m and not SHELL_FED.search(line[:m.start()]):
             end = m.group(2)
     return "\n".join(out)
 
 
 def split_lines(command):
-    """Turn newlines outside quotes into `;` so each line is its own command."""
-    out, quote = [], None
+    """Turn newlines outside quotes into `;` and drop `# comments`, so each line is its own command."""
+    out, quote, comment, prev = [], None, False, " "
     for ch in command:
+        if comment:
+            if ch == "\n":
+                comment = False
+                out.append(" ; ")
+                prev = " "
+            continue
         if quote:
             if ch == quote:
                 quote = None
         elif ch in "'\"":
             quote = ch
+        elif ch == "#" and prev.isspace():
+            comment = True
+            continue
         elif ch == "\n":
             out.append(" ; ")
+            prev = " "
             continue
         out.append(ch)
+        prev = ch
     return "".join(out)
 
 
@@ -154,7 +166,7 @@ def check(command, depth=0):
     while i < len(t):
         tok = t[i]
         # a quoted sub-command (`bash -c 'git push -f'`, `sh -c "..."`) is scanned as a command too
-        runs_it = i > 0 and t[i - 1].lower() in ("-c", "-lc", "-command", "eval", "invoke-expression", "iex")
+        runs_it = i > 0 and t[i - 1].lower() in ("-c", "-lc", "-command", "eval", "invoke-expression", "iex", "/c", "//c", "/k")
         if depth < 3 and runs_it and any(c.isspace() for c in tok) and "git" in tok.lower():
             bad = check(tok, depth + 1)
             if bad:

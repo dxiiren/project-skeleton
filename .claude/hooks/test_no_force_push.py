@@ -39,7 +39,8 @@ BLOCK = [
     "git config --file x remote.origin.push +refs/heads/a:refs/heads/a", "git config --local alias.q 'push -f'",
     "GIT_CONFIG_PARAMETERS=\"'remote.origin.mirror'='true'\" git push origin", "git pu`sh --force origin topic",
     "git config remote.origin.MIRROR true", "bash -c 'cd ../o && git config remote.origin.mirror true'",
-    "git -c remote.o.mirror=true push o", "git push -u origin feat/x \\\n  --force-with-lease",
+    "git -c remote.o.mirror=true push o", "git push origin feat/a `\n  --force-with-lease",
+    "git push origin feat/a `\r\n  --force", "cat <<'EOF'\nhello\nEOF\ngit push -f origin x", "git push -u origin feat/x \\\n  --force-with-lease",
     "powershell -Command \"git push --force origin x\"", "iex 'git push -f origin x'", "$env:GIT_CONFIG_PARAMETERS=\"'remote.o.mirror'='true'\"; git push o",
 ]
 ALLOW = [
@@ -63,6 +64,9 @@ ALLOW = [
     "git push -u origin feat/x\ndocker compose up -d", "git push -u origin feat/x\ngh pr create --fill -d",
     "git push -u origin feat/x\ngh pr create --title 'feat: x' --body \"$(cat <<'EOF'\n## Summary\n- x\nEOF\n)\"",
     "git commit -m 'docs: the hook refuses git push --force'",
+    "git commit -F - <<'EOF2'\nfix: guard refuses git push --force now\nEOF2",
+    "gh pr create --title x --body-file - <<'EOF'\nrefuses git push -f and git push --mirror\nEOF",
+    "git push -u origin feat/x\ngh pr create --body-file - <<EOF\n- git push --force is refused\nEOF\necho ok",
 ]
 miss = [c for c in BLOCK if not nfp.check(c)] + [c for c in ALLOW if nfp.check(c)]
 

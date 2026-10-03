@@ -28,6 +28,26 @@ SEPARATORS = {"&&", "||", ";", "|", "&", "(", ")", "\n"}
 BAD_LONG = ("--force", "--force-with-lease", "--force-if-includes", "--mirror", "--delete", "--prune")
 
 
+HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+
+def drop_heredoc_bodies(command):
+    """A heredoc body is DATA (a commit message, a PR body), never a command - drop it before scanning."""
+    lines = command.split("\n")
+    out, end = [], None
+    for line in lines:
+        if end is not None:
+            if line.strip() == end:
+                end = None
+                out.append(line)
+            continue
+        out.append(line)
+        m = HEREDOC.search(line)
+        if m:
+            end = m.group(2)
+    return "\n".join(out)
+
+
 def split_lines(command):
     """Turn newlines outside quotes into `;` so each line is its own command."""
     out, quote = [], None
@@ -118,7 +138,11 @@ GIT_CONFIG_ENV = re.compile(r"GIT_CONFIG_(?:KEY_\d+|PARAMETERS)\s*=\s*['\"]?([^\
 
 def check(command, depth=0):
     command = CURRENT_BRANCH.sub("CURRENT_BRANCH", command)
-    command = split_lines(command.replace("\\\n", " "))  # a backslash-newline continues the line
+    command = command.replace("\r\n", "\n")
+    command = drop_heredoc_bodies(command)
+    # a line continuation (bash backslash, PowerShell backtick) joins the next line BEFORE lines are split
+    command = re.sub(r"[\\`][ \t]*\n", " ", command)
+    command = split_lines(command)
     command = command.replace("`", "")  # PowerShell escape: pu`sh runs as push (a bash backtick flag stays visible)
     if re.search(r"GIT_CONFIG_(?:KEY_\d+|COUNT|PARAMETERS)", command, re.I) and re.search(r"\bgit\b", command, re.I):
         return "GIT_CONFIG_* override (config from the environment)"

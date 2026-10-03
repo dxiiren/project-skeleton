@@ -34,6 +34,9 @@ How to extract a spec from a developer who knows what they want but has not said
 - Product shape: tool / service / platform / automation / analysis?
 - Who uses it: only you / a small private group / paying customers / an internal team?
 - Ambition: weekend MVP / solid v1 / serious product / still exploring?
+- Why / YAGNI (same round): what pain does this remove, for whom, and what happens if it is never
+  built? Is there something simpler (an existing tool, a script, a manual step) that gets most of
+  the value? Every later Must traces back to this answer.
 
 ### Pain and goal (Discovery)
 

@@ -122,9 +122,13 @@ The largest document. QA writes test cases from this and must never need to ask 
 
 ## 05 TDD - how it is built
 
-1. **Architecture overview** - a mermaid diagram whose every node has an edge, plus one
-   paragraph naming the load-bearing idea (usually: one shared domain module, several
-   consumers, so a rule cannot disagree with itself).
+1. **Architecture overview** - C4 **Context** and **Container** views as mermaid diagrams whose
+   every node has an edge, plus one paragraph naming the load-bearing idea (usually: one shared
+   domain module, several consumers, so a rule cannot disagree with itself). Context + Container
+   are enough; add a **Component** view only where it adds value a builder needs (a module with
+   non-obvious internal boundaries), never Code-level. (Adapted from claude-code-templates
+   `cli-tool/components/skills/creative-design/c4-architecture/SKILL.md` @ 8b1f883, MIT,
+   (c) 2025 Daniel (San) Avila.)
 2. **Stack** - table `layer | choice | rationale`. Pin versions where a break is known; name
    the compatibility gates that must be checked at build time.
 3. **Repository layout** - a tree with a comment per directory.

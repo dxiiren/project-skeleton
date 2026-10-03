@@ -1,3 +1,14 @@
+<!--
+  AUDIENCE - answer this before filling the README, then delete this comment:
+  Who will read this README, and what do they need to know first?
+    - future you / a portfolio viewer -> what it does, the stack, how to run it, what you learned
+    - teammates / new hires           -> setup, architecture, runbooks, who owns what
+    - strangers (open source)         -> install, usage, contributing, licence
+  Write for that reader and drop the sections they do not need (/ground-project resolves it).
+  Adapted from claude-code-templates cli-tool/components/skills/productivity/crafting-effective-readmes
+  ("Always ask: Who will read this, and what do they need to know?") at 8b1f883, MIT,
+  (c) 2025 Daniel (San) Avila.
+-->
 # @@PROJECT_TITLE@@
 
 @@WHAT_IT_IS@@

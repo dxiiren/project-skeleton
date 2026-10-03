@@ -27,7 +27,9 @@ Every auditor prompt carries these five parts. Omit one and the findings degrade
                    Be specific and skeptical. No padding, no praise. Under ~{N} lines.
 ```
 
-Read-only tools only. Explicit `model:` on every spawn. Multiple auditors go out in ONE message.
+Every auditor is the `audit-docs` agent (`.claude/agents/audit-docs.md`, read-only tools),
+with the round named as `LAYER: CROSS-SET | RE-VERIFY | CONFIRM | PER-DOCUMENT`. Explicit
+`model: "opus"` on every spawn. Multiple auditors go out in ONE message.
 
 ## Layer 1 - cross-set audit
 
@@ -85,6 +87,17 @@ One agent per file, all dispatched together. Give each the spine plus its lens.
 | The audit log itself | Sample at least 10 claimed resolutions INCLUDING every blocker and verify each exists in the current text. Do the counts reconcile with the listed rows? Are the caveats consistent with the claims? |
 | Research appendices | Internal consistency; whether downstream citations kept the hedges; whether a superseded recommendation is marked; load-bearing claims that are single-source estimates presented as fact. |
 
+**Every layer-4 auditor also applies the silence lens and ends with a ruling.** Attack what the
+document is SILENT about: states, inputs and failures the system can reach that the text never
+mentions (empty / loading / error / max-truncation / expired / concurrent / dependency down), and
+behaviour written only for the happy path - counted as unwritten when the uncovered cases need
+different handling or recovery. Before a clean ruling, picture the support tickets the day after
+launch: three concrete "when the user does X during Y, Z is undefined" scenarios, each checked.
+Ruling per document: **Approve** (0 blocker, 0 major) / **Conditional** (0 blocker, >= 1 major -
+list them) / **Reject** (>= 1 blocker). Adapted from claude-code-templates
+`cli-tool/components/skills/productivity/devil/SKILL.md` @ 8b1f883, MIT, (c) 2025 Daniel (San)
+Avila.
+
 ## Universal audit dimensions
 
 Useful on any document set, in any domain:
@@ -127,7 +140,8 @@ Useful on any document set, in any domain:
 {per-item pass/fail}
 
 ## Layer 4 - per-document audits
-{totals; then the sharpest findings per document}
+{totals; one line per document with its ruling (Approve / Conditional / Reject); then the
+ sharpest findings per document, silence-lens findings included}
 
 ## Caveats
 {What was applied without independent re-verification. What a round did not sample.

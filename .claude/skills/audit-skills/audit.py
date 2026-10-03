@@ -15,6 +15,7 @@
 #   MISSING:       skills present on disk but absent from README.md
 #   ORPHANED:      README/CLAUDE entries with no matching skill folder
 #   CRED_EXPOSURE: a skill file hardcoding a secret instead of a KEY / env var
+#   NO_AGENT:      a skill with no .claude/agents/<name>.md (or agent.md beside an optional skill)
 # Ends with a PASS/FAIL summary. Exit 1 if ANY section is non-empty, else 0.
 import argparse
 import glob
@@ -217,6 +218,48 @@ def scan_cred_exposure(root):
     return hits
 
 
+# --- NO_AGENT ---------------------------------------------------------------
+# Convention (aitmpl-max-agents, 2026-10-03): every skill hands its procedure to an agent.
+#   .claude/skills/<name>/          -> .claude/agents/<name>.md  (model: opus)
+#   .claude/skills-optional/<name>/ -> agent.md beside its SKILL.md (moved into
+#                                      .claude/agents/ when the skill is enabled)
+# A skill whose work an EXISTING agent of another name does maps to it instead of
+# duplicating it. RUNTIME_LOCKED skills are loaded byte-for-byte by a production app;
+# they may not be turned into shims, so they are exempt (their dev-only agent is optional).
+AGENTS_DIR = ".claude/agents"
+OPTIONAL_DIR = ".claude/skills-optional"
+AGENT_MAP = {"verify-before-claim": "verifier"}
+RUNTIME_LOCKED = set([])
+
+
+def _agent_model(path):
+    fm = parse_frontmatter(path) if os.path.isfile(path) else None
+    return (fm or {}).get("model", "").strip().strip("'\"")
+
+
+def scan_no_agent(root, disk_names):
+    rows = []
+    for name in sorted(disk_names):
+        if name in RUNTIME_LOCKED:
+            continue
+        agent = AGENT_MAP.get(name, name)
+        path = os.path.join(root, AGENTS_DIR, agent + ".md")
+        if not os.path.isfile(path):
+            rows.append(name + "  -> create " + AGENTS_DIR + "/" + agent + ".md")
+        elif _agent_model(path) != "opus":
+            rows.append(name + "  -> " + AGENTS_DIR + "/" + agent + ".md must pin model: opus")
+    base = os.path.join(root, OPTIONAL_DIR)
+    for skill_md in sorted(glob.glob(os.path.join(base, "**", "SKILL.md"), recursive=True)):
+        d = os.path.dirname(skill_md)
+        rel = os.path.relpath(d, root).replace(os.sep, "/")
+        agent_md = os.path.join(d, "agent.md")
+        if not os.path.isfile(agent_md):
+            rows.append(rel + "  -> create " + rel + "/agent.md")
+        elif _agent_model(agent_md) != "opus":
+            rows.append(rel + "/agent.md must pin model: opus")
+    return rows
+
+
 def readme_linked_skills(readme_text):
     # Skills registered as table-row links: [name](name/SKILL.md)
     return set(m.group(1) for m in re.finditer(r'\(([a-z0-9][a-z0-9-]*)/SKILL\.md\)', readme_text))
@@ -256,6 +299,7 @@ def main():
     fm_issues, bad_model = scan_frontmatter_and_model(disk)
     bom_hits = scan_skill_bom(disk)
     cred_hits = scan_cred_exposure(root)
+    no_agent = scan_no_agent(root, disk_names)
 
     readme_path = os.path.join(root, README)
     claude_path = os.path.join(root, CLAUDE_MD)
@@ -302,8 +346,11 @@ def main():
                    [loc + "  -> " + snip for loc, snip in cred_hits],
                    "no hardcoded secrets")
 
+    _print_section("NO_AGENT (skill without its agent; see the convention above scan_no_agent)",
+                   no_agent, "every skill has its agent (runtime-locked exempt)")
+
     fail = bool(no_skill_md or fm_issues or bad_model or bom_hits or missing
-                or orphaned or cred_hits)
+                or orphaned or cred_hits or no_agent)
     print("")
     print("REGISTERED=" + str(len(registered & disk_names)) + " SKILLS=" + str(len(disk_names)))
     print("RESULT: " + ("FAIL" if fail else "PASS"))

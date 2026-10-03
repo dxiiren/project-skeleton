@@ -6,102 +6,29 @@ model: sonnet
 
 # Test All MCP — live MCP health check
 
-Walks every MCP server this repo wires and reports its status in one pass. MCP servers load at Claude
-**session start**, so in a normal session their `mcp__<server>__*` tools are already available — this
-skill **calls them for real** and judges each against a concrete PASS criterion. It is the live-session
-counterpart to `setup-mcp`'s restart-gated single-server check: same `checks/*.txt` prompts, run at once.
-
-The per-server smoke-test prompts live in [`checks/`](checks/). `setup-mcp` drops a new server's
-`checks/<server>.txt` here whenever an MCP is onboarded — so this skill always covers the full inventory.
-
-## Trigger
+Triggers:
 
 - "test all mcp" / "test the mcp servers" / "test every mcp"
 - "check mcp status" / "mcp status" / "which mcps are up"
 - "are the mcps working" / "mcp health check"
 - Or names one server: "test the github mcp" / "check context7" (run just that row).
 
-## Procedure
+**Your first action is the `Agent` call below - before any Bash, Read, ToolSearch or MCP call of your
+own.** The roster, the live smoke calls and the verdicts live in the `test-all-mcp` agent
+(`.claude/agents/test-all-mcp.md`). A subagent can call the session's MCP tools (measured
+2026-10-03), so hand it the whole job - do not run the checks yourself:
 
-### 1. Build the roster (from the real config)
-
-Read the config files — they are the ground truth, not memory:
-
-- **`.claude/settings.json` → `enabledMcpjsonServers`** = the turnkey servers (currently
-  `context7`, `playwright`).
-- **`.claude/settings.local.json` → `enabledMcpjsonServers`** (git-ignored, may not exist) = the
-  per-dev opt-ins (`github`).
-- **`checks/`** = which servers have a smoke prompt.
-
-The **TO TEST** list = servers that are enabled **and** have a `checks/<server>.txt`. A server that isn't
-enabled for this dev/machine is a **SKIP** (not a FAIL). A server enabled with no check prompt is a
-gap → note it (author `checks/<server>.txt`).
-
-### 2. Run each server's smoke test (live, in this session)
-
-For every server in TO TEST:
-
-1. **Read** `checks/<server>.txt` — it names the exact tool (`mcp__<server>__<tool>`), its args, and the
-   concrete PASS criterion.
-2. **Load the schema if the tool is deferred.** Most MCP tools are surfaced as _deferred_ (name only).
-   Before the first call to a server, run `ToolSearch` with `select:mcp__<server>__<tool>` to load its
-   schema, then call it. If a server was _still connecting_ at session start, re-run `ToolSearch` after a
-   moment.
-3. **Call** the tool with the args from the `.txt`.
-4. **Judge** the result against the `.txt`'s PASS criterion.
-
-**Parallelize.** These are lightweight calls (one or two per server) — fire several in a single message
-(parallel tool calls, not subagents) to keep it fast.
-
-### 3. Classify each server
-
-| Verdict  | When                                                                                          |
-| -------- | ---------------------------------------------------------------------------------------------- |
-| **PASS** | tool returned the expected value/shape from the `.txt` criterion                               |
-| **FAIL** | tool is enabled but errored / returned wrong data (and it is not a known non-failure below)    |
-| **SKIP** | not enabled for this dev, or a precondition is absent (app not being served, PAT not filled)   |
-
-**Bake in the known non-failures** — do not misread these as FAIL:
-
-- **playwright** — [GROUND: if this project serves locally: "needs `just start` running for the local
-  page; with the server stopped, a connection-refused on the app URL is a SKIP, not a FAIL (retest
-  against about:blank to prove the MCP itself works)". For a CLI stack: "there is no local page —
-  test against about:blank".]
-- **github** — a 401/403 = PAT wrong/expired/missing scopes → `/setup-mcp github`. Not enabled for
-  this dev → SKIP.
-
-### 4. Report
-
-Print the status table (SERVER · ENABLED · CONNECTED · VERDICT · NOTE), then a one-line summary:
-`N PASS / M FAIL / K SKIP`. Call out any FAIL with the fix pointer (usually `/setup-mcp <server>`).
-
-```text
-SERVER      ENABLED     CONNECTED  VERDICT  NOTE
-context7    turnkey     yes        PASS     resolved a library id
-playwright  turnkey     yes        PASS     snapshot returned
-github      per-dev     -          SKIP     not opted in / PAT not filled
+```
+Agent(subagent_type: "test-all-mcp", model: "opus",
+      description: "MCP health check",
+      prompt: "<the developer's request verbatim; name the one server if they named one>")
 ```
 
-Offer to save the table to `.claude/workspace/reports/audits/mcp-status/<YYYY-MM-DD>.md` if the developer
-wants it tracked over time — default is in-session only.
+Relay the agent's status table and its `N PASS / M FAIL / K SKIP` line as it returns them; point any
+FAIL at `/setup-mcp <server>`.
 
 ## Keeping this skill in sync
 
-This skill's coverage **is** the set of `checks/*.txt`. Whenever an MCP is onboarded or changed, its check
-prompt must live here — `setup-mcp` does this automatically (writes `checks/<server>.txt` + a
-`checks/README.txt` line). If you add one by hand, do the same: one `.txt` (tool + args + concrete PASS
-criterion + known non-failures) + one index line. Removing a server: delete its `checks/<server>.txt` and
-its stub/config entry.
-
-## Anti-Patterns
-
-- **Do NOT** report a server as broken without reading its `checks/<server>.txt` criterion first — a
-  per-dev server that's simply not enabled, or a known non-failure, is a **SKIP**, never a FAIL.
-- **Do NOT** guess the roster from memory or from the session-start "connecting" list — read
-  `settings.json` + `settings.local.json`; they are the ground truth.
-- **Do NOT** spawn a server + `tools/list` handshake as a stand-in for a real call — in a live session the
-  `mcp__<server>__*` tools already exist; call them.
-- **Do NOT** call a deferred tool before loading its schema with `ToolSearch` — it fails with
-  `InputValidationError`. Load, then call.
-- **Do NOT** hardcode any credential here — the check prompts reference tool names and expected shapes
-  only; secrets stay in `.mcp.json`.
+Coverage is the set of `checks/*.txt`. A new server needs its `checks/<server>.txt` AND an
+`mcp__<server>` entry on the `tools:` line of `.claude/agents/test-all-mcp.md` - without that entry
+the agent cannot see the server and reports it SKIP.

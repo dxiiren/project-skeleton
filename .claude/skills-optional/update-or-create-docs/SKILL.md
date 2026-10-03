@@ -4,79 +4,29 @@ description: Use when creating OR updating any .docs/ document — enforces styl
 model: sonnet
 ---
 
-# Update or Create Docs -- Documentation Consistency Enforcer
+# Update or Create Docs
 
-## Trigger
+Triggers: "document X", "write a doc for X", "add to docs", "update the docs", or creating / updating any `.docs/` document.
 
-Invoke whenever creating a NEW `.docs/` document, updating an EXISTING one, or the user says
-"document X", "write a doc for X", "add to docs", "update the docs".
+**Your first action is the `Agent` call below - before any Read, Edit or Write of your own.**
+The procedure (house style, the README + tldr sibling update, the `check-sibling-sync.py` gate)
+lives in the `update-or-create-docs` agent (`.claude/agents/update-or-create-docs.md`). Hand the
+work to it - do not write the doc yourself:
 
----
-
-## Rule: The Sibling Update (NON-NEGOTIABLE)
-
-Every time a `.docs/` document is created or meaningfully updated, these MUST be updated in
-the same pass:
-
-| File | What to update |
-|------|---------------|
-| `.docs/README.md` | Add/update the row in the correct section table |
-| `.docs/tldr.md` | Add/update the 30-second summary section |
-
-### Mechanical gate -- run the sync checker
-
-Before reporting done, verify the sibling rule with the dedicated script:
-
-```bash
-uv run --no-project python .claude/skills/update-or-create-docs/check-sibling-sync.py
+```
+Agent(subagent_type: "update-or-create-docs", model: "opus",
+      description: "Create or update a .docs/ doc",
+      prompt: "<the developer's request verbatim, plus what changed in the code that the doc must now say>")
 ```
 
-- It reads git state (staged + unstaged + untracked) under `.docs/`. If any `.docs/` doc
-  changed but the two siblings did not both change, it prints the missing siblings and
-  exits 1.
-- `SYNC OK` + exit 0 = the rule is satisfied.
+Relay the files the agent changed and its gate line (`SYNC OK`, or the missing siblings). If it
+returned `NEEDS: <question>`, ask the developer that question and call the agent again with the
+answer.
 
-> The script is the single source of truth for the gate. Don't reimplement it inline; if
-> it's wrong, fix `check-sibling-sync.py`.
 
----
+## Optional skill: where the agent lives
 
-## Writing Style (the reasoning part -- stays with the model)
-
-### Step 1: Read a sibling doc first (style check)
-
-Before writing a new doc, read ONE existing doc in the same numbered section
-(`01-overview/` ... `07-faq/`). Check: TL;DR callout? `---` rules between sections?
-heading depth? Related-docs table at the end?
-
-### Step 2: Style rules (from `.docs/05-reference/conventions.md`)
-
-- **Every doc opens with a `> **TL;DR** ...` blockquote** and ends with a **Related docs**
-  table.
-- **No badges, no emoji, tables over prose, second-person imperative.**
-- **Explicit over implicit.** State the mechanism, not just the outcome — every link in the
-  chain stated (not "X collects metrics" but "X runs as ..., reads ..., and returns ...").
-- Content depth scales with the change — structure never does.
-
-### Step 3: Create or update
-
-- **New:** structure as (1) what it is + why it exists, (2) how it works end-to-end,
-  (3) specifics (commands/ports/paths), (4) local dev, (5) how to extend.
-- **Updating:** read the full current doc first; update only affected sections; then
-  re-check the README.md description + tldr.md summary accuracy.
-
-### Steps 4-5: Update the siblings
-
-- **README.md** -- one-line row: `| [filename.md](XX-section/filename.md) | what it covers,
-  who reads it |` in the right `## NN-folder` section.
-- **tldr.md** -- a 30-second section: title link, 1-2 sentence plain-English summary,
-  optional key flow/command block, <=5 key-facts bullets ending with `---`. Summarise in
-  your own words, never copy-paste. Keep sections in the numbered-folder order.
-
----
-
-## Evolution Log
-
-- Shipped with the project-skeleton kit, adapted from a larger team repo's three-file rule:
-  the environment-urls sibling (team-infra specific) was dropped; the two-sibling gate
-  (README.md + tldr.md) + the committed sync-check script pattern kept intact.
+This skill sits in `.claude/skills-optional/` (inert). Its agent ships beside it as
+`agent.md` so it is NOT loaded while the skill is inert. When the skill is enabled (moved to
+`.claude/skills/`, e.g. by `/ground-project`), move `agent.md` to
+`.claude/agents/update-or-create-docs.md` in the same step - the hand-off above names that path.

@@ -11,9 +11,9 @@ of these inside a quoted sub-command (`bash -c '...'`), or a `git config` that a
 (`--m`, `--mirr`), `remote.<name>.mirror` set by `-c`, `--config-env`, `GIT_CONFIG_KEY_n` or `git config`,
 `git remote add --mirror`, the word `mirror` anywhere in a git config/remote/push command,
 any `GIT_CONFIG_*` override next to git, PowerShell backtick escapes, a PowerShell `@splat`, `git send-pack`, `xargs git push`, and a `$VAR`/`$(...)` argument (except the
-current-branch substitutions). Wired for the Bash AND PowerShell tools, on EVERY command (no text pre-filter -
+current-branch substitutions, quoted or not). Wired for the Bash AND PowerShell tools, on EVERY command (no text pre-filter -
 a `*push*` filter once hid `send-pack` and `git config` from it). Known limits: an alias ALREADY in the user's git config,
-a push run from inside a script file, and a git binary renamed or reached through another
+a push run from inside a script file, a command assembled at run time (eval of built strings, encodings), and a git binary renamed or reached through another
 program cannot be seen in the command text. GitHub branch protection is the server-side backstop.
 Cases: test_no_force_push.py beside this file (`python .claude/hooks/test_no_force_push.py`). Exit 2 = blocked (stderr goes to the model).
 """
@@ -95,11 +95,13 @@ def forcing_config(args):
     return None
 
 
+CURRENT_BRANCH = re.compile(r"\$\(\s*git\s+(?:branch\s+--show-current|rev-parse\s+--abbrev-ref\s+HEAD)\s*\)")
 GIT_CONFIG_NAME = re.compile(r"^(?:\$env:)?GIT_CONFIG_(?:KEY_\d+|VALUE_\d+|COUNT|PARAMETERS)\b", re.I)
 GIT_CONFIG_ENV = re.compile(r"GIT_CONFIG_(?:KEY_\d+|PARAMETERS)\s*=\s*['\"]?([^\s'\"]+)", re.I)
 
 
 def check(command, depth=0):
+    command = CURRENT_BRANCH.sub("CURRENT_BRANCH", command)
     command = command.replace("`", "")  # PowerShell escape: pu`sh runs as push (a bash backtick flag stays visible)
     if re.search(r"GIT_CONFIG_(?:KEY_\d+|COUNT|PARAMETERS)", command, re.I) and re.search(r"\bgit\b", command, re.I):
         return "GIT_CONFIG_* override (config from the environment)"
@@ -111,20 +113,25 @@ def check(command, depth=0):
     while i < len(t):
         tok = t[i]
         # a quoted sub-command (`bash -c 'git push -f'`, `sh -c "..."`) is scanned as a command too
-        if depth < 3 and any(c.isspace() for c in tok) and "push" in tok:
+        if depth < 3 and any(c.isspace() for c in tok) and "git" in tok.lower():
             bad = check(tok, depth + 1)
             if bad:
                 return bad
         if is_git(tok):
             end = next((n for n in range(i + 1, len(t)) if t[n] in SEPARATORS), len(t))
             start = max([n for n in range(i) if t[n] in SEPARATORS] + [-1]) + 1
-            seg = [x.lower() for x in t[i + 1:end]]
+            raw = t[i + 1:end]
             if any(GIT_CONFIG_NAME.match(x) for x in t[start:i]):
                 return "GIT_CONFIG_* override in front of git (config from the environment)"
-            sub = next((x for n, x in enumerate(seg) if not x.startswith("-")
-                        and not (n > 0 and seg[n - 1] in GIT_OPTS_WITH_VALUE)), "")
-            risky_globals = any(x.startswith(("-c", "--config-env")) for x in seg[:seg.index(sub)] if sub) if sub else False
-            if (sub in ("config", "remote", "push", "send-pack") or risky_globals) and any("mirror" in x for x in seg):
+            k = 0
+            while k < len(raw) and raw[k].startswith("-"):
+                opt = raw[k]
+                val = raw[k + 1] if opt in GIT_OPTS_WITH_VALUE and k + 1 < len(raw) else opt
+                if (opt == "-c" or opt.startswith("--config-env")) and "mirror" in val.lower():
+                    return opt + " " + val + " (mirror config)"
+                k += 2 if opt in GIT_OPTS_WITH_VALUE else 1
+            sub = raw[k] if k < len(raw) else ""
+            if sub in ("config", "remote", "push", "send-pack") and any("mirror" in x.lower() for x in raw[k:]):
                 return "mirror (any spelling of a mirror remote or push)"
             j = i + 1
             while j < len(t) and t[j].startswith("-") and t[j] not in SEPARATORS:

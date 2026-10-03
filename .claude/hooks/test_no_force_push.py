@@ -38,7 +38,8 @@ BLOCK = [
     "git config -f .git/config remote.origin.mirror true", "git config --type bool remote.origin.mirror true",
     "git config --file x remote.origin.push +refs/heads/a:refs/heads/a", "git config --local alias.q 'push -f'",
     "GIT_CONFIG_PARAMETERS=\"'remote.origin.mirror'='true'\" git push origin", "git pu`sh --force origin topic",
-    "git config remote.origin.MIRROR true", "$env:GIT_CONFIG_PARAMETERS=\"'remote.o.mirror'='true'\"; git push o",
+    "git config remote.origin.MIRROR true", "bash -c 'cd ../o && git config remote.origin.mirror true'",
+    "git -c remote.o.mirror=true push o", "$env:GIT_CONFIG_PARAMETERS=\"'remote.o.mirror'='true'\"; git push o",
 ]
 ALLOW = [
     "git push", "git push -u origin feat/x", "git push --follow-tags", "git push -v origin main", "git -C . push origin main",
@@ -53,6 +54,10 @@ ALLOW = [
     "git --config-env=user.name=N commit -m x",
     "git add scripts/state-mirror.sh", "git commit -m 'docs: mirror notes'", "git log -- scripts/state-mirror.sh",
     "git config --get remote.origin.url", "git config -f .gitmodules submodule.x.url y",
+    "git -C web status -- ../docker/server/state-mirror.sh", "git -C x add state-mirror.sh",
+    "git -c core.quotepath=off log --oneline -5 -- docker/server/state-mirror.sh",
+    "git -c user.email=a@b.c commit -m 'fix(scripts): state-mirror.sh skips logins'",
+    "git push -u origin $(git branch --show-current)", "git push origin feature/x 2>&1 | tail -5",
 ]
 miss = [c for c in BLOCK if not nfp.check(c)] + [c for c in ALLOW if nfp.check(c)]
 

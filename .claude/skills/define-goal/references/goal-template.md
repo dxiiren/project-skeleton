@@ -221,6 +221,13 @@ work. If you are not confident the ledger records an `item` per line, run serial
   text, the environment constraint, or the missing credential. Name it; do not summarize it.
 - Do NOT thrash. Burning dozens of exploratory commands without converging is the failure mode this
   rule exists to cut off - one named wall is worth more than twenty more probes.
+- **Repeated-approach / flip-flop guard.** Record a one-line `approach` with every ledger entry.
+  If an item's next attempt repeats an approach already tried - or flips back to one already
+  abandoned (A, then B, then A again) - with no new evidence, that is a stall even if the files
+  changed: name the wall instead of trying it a third time. Never "pass" by weakening the check
+  or the test. (Adapted from claude-code-templates
+  cli-tool/components/loops/engineering/anti-spin-build-loop.md @ 8b1f883, MIT,
+  (c) 2025 Daniel (San) Avila.)
 
 ## Morning briefing
 

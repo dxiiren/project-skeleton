@@ -6,6 +6,15 @@ every skill here is registered and that `CLAUDE.md` references only existing ski
 
 Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 
+**Every skill hands its procedure to an agent.** Each `SKILL.md` is a thin shim whose first action is 
+`Agent(subagent_type: "<name>", model: "opus")`; the procedure lives in `.claude/agents/<name>.md` (`model: opus`). 
+Interactive steps (owner approval, AskUserQuestion) stay in the shim; `verify-before-claim` maps to `verifier`. 
+An optional skill keeps its agent beside it (`skills-optional/<name>/agent.md`) until `/ground-project` enables it. 
+A skill a production app loads byte-for-byte is runtime-locked (never shimmed; list it in `audit.py` `RUNTIME_LOCKED`). 
+`/audit-skills` FAILS (NO_AGENT) on a skill without its agent. `.claude/agents/` must never ship in an image. 
+
+Re-sweeping aitmpl for new things to adopt: see [`AITMPL-RESWEEP.md`](../../AITMPL-RESWEEP.md).
+
 > Freshly scaffolded? Run [ground-project](ground-project/SKILL.md) first — it resolves the
 > `[GROUND: ...]` markers in the skills below against this project's real code and enables
 > the applicable optional skills.
@@ -38,6 +47,8 @@ Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 | [pre-pr-review](pre-pr-review/SKILL.md)             | Self-review the branch diff against this project's stack checklist + a boot check; report to `workspace/reports/pr/`.           | opus   |
 | [lint-check](lint-check/SKILL.md)                   | Run this project's quality layers (stack gate, kit-placeholder grep, debug-leftover grep); report pass/fail per layer.          | sonnet |
 | [audit-docs](audit-docs/SKILL.md)                   | Layered adversarial audit of a document set (cross-set → re-verify → per-document), with the fix loop and an `audits/` trail.   | opus   |
+| [systematic-debugging](systematic-debugging/SKILL.md) | Root cause before any fix: live state first, one hypothesis, test-first fix, stop after three failed fixes; ships `find-polluter.sh`. | opus   |
+| [test-driven-development](test-driven-development/SKILL.md) | Red seen, then green, never commit red; infra acceptance tables and source-level guard tests proven with a mutant. | opus   |
 
 ## MCP tooling
 
@@ -51,6 +62,8 @@ Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 | Skill                                 | What it does                                                                                                     | Model  |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------ |
 | [audit-skills](audit-skills/SKILL.md) | Verify every skill has a valid, registered `SKILL.md` (no BOM, valid model, no hardcoded secret) via `audit.py`. | sonnet |
+| [claude-md-refactor](claude-md-refactor/SKILL.md) | Split a bloated `CLAUDE.md`: invariants + links stay, write-ups move to `.docs/`, every rule mapped to the test/hook that enforces it. | opus   |
+| [powershell-windows](powershell-windows/SKILL.md) | PS 5.1 / pwsh 7 / Git Bash traps for every `.ps1` and justfile recipe, plus `scan.ps1` (incl. a real 5.1 parse). | opus   |
 
 ## Planning & handoff
 
@@ -76,3 +89,5 @@ as inert reference — they are not loaded and not audited.
 | fix-phpstan | phpstan/larastan in `composer.json` |
 | update-or-create-docs | always recommended once `.docs/` has real content |
 | audit-pagespeed | the project ships a **web page on a public URL** (PageSpeed cannot reach `localhost`) |
+| supply-chain-audit | a lockfile or dependency manifest exists (`package-lock.json`, `uv.lock`, `composer.lock`, `pom.xml`, ...) or a `Dockerfile` / `.github/workflows/` |
+| dependabot-review | `.github/dependabot.yml` exists |

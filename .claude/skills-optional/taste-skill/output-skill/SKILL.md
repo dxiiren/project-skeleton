@@ -1,49 +1,28 @@
 ---
 name: full-output-enforcement
 description: Overrides default LLM truncation behavior. Enforces complete code generation, bans placeholder patterns, and handles token-limit splits cleanly. Apply to any task requiring exhaustive, unabridged output.
+model: opus
 ---
 
-# Full-Output Enforcement
+# full-output-enforcement
 
-## Baseline
+Triggers: `/full-output-enforcement`, or any task matching the description above (overrides default llm truncation behavior).
 
-Treat every task as production-critical. A partial output is a broken output. Do not optimize for brevity — optimize for completeness. If the user asks for a full file, deliver the full file. If the user asks for 5 components, deliver 5 components. No exceptions.
-
-## Banned Output Patterns
-
-The following patterns are hard failures. Never produce them:
-
-**In code blocks:** `// ...`, `// rest of code`, `// implement here`, `// TODO`, `/* ... */`, `// similar to above`, `// continue pattern`, `// add more as needed`, bare `...` standing in for omitted code
-
-**In prose:** "Let me know if you want me to continue", "I can provide more details if needed", "for brevity", "the rest follows the same pattern", "similarly for the remaining", "and so on" (when replacing actual content), "I'll leave that as an exercise"
-
-**Structural shortcuts:** Outputting a skeleton when the request was for a full implementation. Showing the first and last section while skipping the middle. Replacing repeated logic with one example and a description. Describing what code should do instead of writing it.
-
-## Execution Process
-
-1. **Scope** — Read the full request. Count how many distinct deliverables are expected (files, functions, sections, answers). Lock that number.
-2. **Build** — Generate every deliverable completely. No partial drafts, no "you can extend this later."
-3. **Cross-check** — Before output, re-read the original request. Compare your deliverable count against the scope count. If anything is missing, add it before responding.
-
-## Handling Long Outputs
-
-When a response approaches the token limit:
-
-- Do not compress remaining sections to squeeze them in.
-- Do not skip ahead to a conclusion.
-- Write at full quality up to a clean breakpoint (end of a function, end of a file, end of a section).
-- End with:
+**Your first action is the `Agent` call below - before any Bash, Read or text of your own.** The
+procedure lives in the `full-output-enforcement` agent (`.claude/agents/full-output-enforcement.md`). Hand the work to it - do not
+run it yourself:
 
 ```
-[PAUSED — X of Y complete. Send "continue" to resume from: next section name]
+Agent(subagent_type: "full-output-enforcement", model: "opus",
+      description: "full-output-enforcement task",
+      prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```
 
-On "continue", pick up exactly where you stopped. No recap, no repetition.
+Relay what the agent produced or changed, file by file, and any question it returned.
 
-## Quick Check
+## Optional skill: where the agent lives
 
-Before finalizing any response, verify:
-- No banned patterns from the list above appear anywhere in the output
-- Every item the user requested is present and finished
-- Code blocks contain actual runnable code, not descriptions of what code would do
-- Nothing was shortened to save space
+This skill sits in `.claude/skills-optional/taste-skill/output-skill/` (inert, part of the `taste-skill` bundle). Its agent ships
+beside it as `agent.md` so it is NOT loaded while the skill is inert. When the skill is enabled
+(its folder moved AND renamed to `.claude/skills/full-output-enforcement/` - audit-skills requires the folder to equal the frontmatter `name:`; and add its catalog row `| [full-output-enforcement](full-output-enforcement/SKILL.md) | ... | opus |` to `.claude/skills/README.md`, or audit-skills reports it MISSING), move `agent.md` to `.claude/agents/full-output-enforcement.md` in the same
+step - the hand-off above names that path.

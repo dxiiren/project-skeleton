@@ -39,7 +39,8 @@ BLOCK = [
     "git config --file x remote.origin.push +refs/heads/a:refs/heads/a", "git config --local alias.q 'push -f'",
     "GIT_CONFIG_PARAMETERS=\"'remote.origin.mirror'='true'\" git push origin", "git pu`sh --force origin topic",
     "git config remote.origin.MIRROR true", "bash -c 'cd ../o && git config remote.origin.mirror true'",
-    "git -c remote.o.mirror=true push o", "$env:GIT_CONFIG_PARAMETERS=\"'remote.o.mirror'='true'\"; git push o",
+    "git -c remote.o.mirror=true push o", "git push -u origin feat/x \\\n  --force-with-lease",
+    "powershell -Command \"git push --force origin x\"", "iex 'git push -f origin x'", "$env:GIT_CONFIG_PARAMETERS=\"'remote.o.mirror'='true'\"; git push o",
 ]
 ALLOW = [
     "git push", "git push -u origin feat/x", "git push --follow-tags", "git push -v origin main", "git -C . push origin main",
@@ -58,6 +59,10 @@ ALLOW = [
     "git -c core.quotepath=off log --oneline -5 -- docker/server/state-mirror.sh",
     "git -c user.email=a@b.c commit -m 'fix(scripts): state-mirror.sh skips logins'",
     "git push -u origin $(git branch --show-current)", "git push origin feature/x 2>&1 | tail -5",
+    "git push -u origin fix/state-mirror-logins", "git push -u origin feat/x\nrm -rf node_modules/.cache",
+    "git push -u origin feat/x\ndocker compose up -d", "git push -u origin feat/x\ngh pr create --fill -d",
+    "git push -u origin feat/x\ngh pr create --title 'feat: x' --body \"$(cat <<'EOF'\n## Summary\n- x\nEOF\n)\"",
+    "git commit -m 'docs: the hook refuses git push --force'",
 ]
 miss = [c for c in BLOCK if not nfp.check(c)] + [c for c in ALLOW if nfp.check(c)]
 

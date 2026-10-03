@@ -116,6 +116,12 @@ project-skeleton/
 Token conventions, invariants, and the per-stack boot-verify bar live in
 [`GROUNDING.md`](GROUNDING.md).
 
+## Skills are agents
+
+Every skill in `.claude/skills/` hands its procedure to an agent in `.claude/agents/` (opus); interactive
+steps stay in the skill. `/audit-skills` fails on a skill without its agent. To look for new skills, agents,
+hooks or settings worth adopting, follow [`AITMPL-RESWEEP.md`](AITMPL-RESWEEP.md).
+
 ## Testing
 
 The scaffold behavior is locked by a Pester suite:

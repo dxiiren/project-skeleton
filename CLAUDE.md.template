@@ -50,6 +50,13 @@ and **follow the relevant skill before writing code**. Notables: `/commit`, `/cr
 `/define-requirements`, `/audit-docs`, `/setup-mcp`, `/test-all-mcp`, `/audit-skills`,
 `/setup-just`.
 
+**Every skill hands its procedure to an agent.** Each `SKILL.md` is a thin shim whose first action is
+`Agent(subagent_type: "<name>", model: "opus")`; the procedure lives in `.claude/agents/<name>.md` (`model: opus`).
+Interactive steps (owner approval, AskUserQuestion) stay in the shim; `verify-before-claim` maps to `verifier`.
+An optional skill keeps its agent beside it (`skills-optional/<name>/agent.md`) until `/ground-project` enables it.
+A skill a production app loads byte-for-byte is runtime-locked (never shimmed; list it in `audit.py` `RUNTIME_LOCKED`).
+`/audit-skills` FAILS (NO_AGENT) on a skill without its agent. `.claude/agents/` must never ship in an image.
+
 New project or a major new capability with no spec yet? Start at `/define-requirements`
 (Discovery → BRD → PRD → FSD → TDD into `.docs/00-requirements/`), then `/audit-docs`, then
 `/define-goal` to turn the TDD's build plan into an autonomous run.
@@ -181,3 +188,5 @@ nothing reads is worse than none.
   host-key prompt hangs the run.
 - Never hardcode `$HOME\Downloads` or any personal path in a script handed to teammates. Test every
   copy-paste one-liner before documenting it.
+
+**Secret files are deny-listed** in `.claude/settings.json` (`Read`/`Edit` of `.env`, `.env.local`, `.env.*.local`, `.env.development`, `.env.production`, `.env.staging`, `.env.test` - not `.env.example` - plus `*.pem`, `*.key`, `id_rsa*`, `credentials.json`; any other `.env.*` name is NOT covered, so add it before you create one) - adapted from claude-code-templates `cli-tool/components/settings/permissions/deny-sensitive-files.json` @ 8b1f883, MIT, (c) 2025 Daniel (San) Avila. The `secret_scanner.py` and `no_force_push.py` PreToolUse hooks sit beside it.

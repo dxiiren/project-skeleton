@@ -4,96 +4,35 @@ description: Use when the developer says 'monitor ci', 'watch ci', 'watch the ac
 model: sonnet
 ---
 
-# monitor-ci — Watch the GitHub Actions run to completion
+# monitor-ci - Watch the GitHub Actions run to completion
 
-Follow the CI workflow end-to-end for the current branch or PR on
-`github.com/dxiiren/@@REPO_SLUG@@`. [GROUND: name the workflow file(s) and their jobs,
-e.g. "`.github/workflows/ci.yml` has two jobs: `quality` (Lint · Typecheck · Test · Build)
-and `e2e` (Playwright)".] Report which passed, and for any failure surface the offending
-job's log.
+Triggers: "monitor ci", "/monitor-ci", "watch ci", "watch the action(s)", "watch the PR build", "is the CI passing", "did the build pass", "why did CI fail", "fix the failing check", or right after a push / `/create-pr` to follow the run.
 
-## Trigger
+**Your first action is the `Agent` call below - before any `gh` or git call of your own.** The
+procedure (find the run, watch it, read a failed job's log even mid-run, map the failure to its
+cause) lives in the read-only `monitor-ci` agent (`.claude/agents/monitor-ci.md`). Hand the work
+to it - do not run `gh` yourself. Mode: **WATCH** for "monitor / watch ...", **STATUS** for
+"is CI passing" / "why did CI fail":
 
-When the developer says any of:
-
-- "monitor ci" / "/monitor-ci" / "watch ci" / "watch the action(s)"
-- "watch the PR build" / "watch it through"
-- "is the CI passing" / "did the build pass" (after a push/PR)
-- right after `/commit` push or `/create-pr`, to follow the run
-
----
-
-## What to Do
-
-Use the **`gh` CLI** (or the GitHub MCP Actions tools if `gh` is unavailable — fall
-back silently). All commands run from the repo root.
-
-### 1 — Find the run for the current branch
-
-```bash
-gh run list --branch "$(git branch --show-current)" --limit 5
+```
+Agent(subagent_type: "monitor-ci", model: "opus",
+      description: "Watch / inspect CI",
+      prompt: "MODE: <WATCH|STATUS>. Developer said: <their words verbatim>. Branch/PR: <if named>.")
 ```
 
-This lists recent runs with their **run ID**, status, and workflow name. Grab the
-newest run ID for the CI workflow (the one triggered by your latest push/PR).
+Relay its per-job result and the key failing log line(s).
 
-### 2 — Watch it to completion
+**Fixing stays here (the approval step).** If it returned `PROPOSED FIX: ...`, show it to the
+developer and WAIT for an explicit yes before changing anything (a formatting-only fix may go
+straight to the repo's lint/format command). Fix the root cause - never water down an assertion,
+lower a coverage floor, or add a static-analysis baseline entry to go green. After the fix is
+pushed, call the agent again with `MODE: WATCH`. Never rerun or push from this skill without the
+developer's word. `STOPPED: gh not authenticated` -> ask the developer to run `gh auth login`.
 
-```bash
-gh run watch <run-id> --exit-status
-```
 
-`gh run watch` streams live status and blocks until the run is terminal; it prints
-each job's progress and **exits non-zero if the run failed** (`--exit-status`), which
-is your pass/fail signal. If you didn't capture the ID, `gh run watch` with no ID
-prompts for the most recent run — pass the ID explicitly to avoid ambiguity.
+## Optional skill: where the agent lives
 
-> Prefer running the watch with the Bash tool's `run_in_background: true` so it keeps
-> polling across turns and re-invokes you when the run is terminal — don't hand-roll a
-> foreground poll loop.
-
-### 3 — Inspect on completion
-
-Snapshot the final per-job result:
-
-```bash
-gh run view <run-id>
-```
-
-For any **failed** job, pull its log and surface the cause:
-
-```bash
-gh run view <run-id> --log-failed          # only the failed steps' log
-gh run view <run-id> --job <job-id> --log  # a specific job's full log
-```
-
-[GROUND: per-job grep hints for THIS workflow's failure modes, e.g. "quality failures →
-look for the ESLint `error` lines / the typecheck TS errors / a test-runner FAIL line;
-e2e failures → the failing spec name".]
-
----
-
-## Reporting back
-
-After the watch returns, report:
-
-1. **Result** — overall pass/fail, and per job.
-2. **On failure** — name the failing job + step, and paste the key error line(s) from
-   `--log-failed`. Point at the root cause, don't just say "CI failed".
-3. **Next step** — [GROUND: map failure kinds to this repo's fix skills/commands, e.g.
-   "typecheck failure → `/fix-typecheck`; lint/format → `/lint-check`; a test failure →
-   read the failing spec and fix the root cause (don't water down assertions)".]
-
----
-
-## Notes / gotchas
-
-- **`gh` must be authenticated** — `gh auth status`. If not, tell the developer to run
-  `gh auth login`, or fall back to the GitHub MCP Actions tools.
-- **PR vs branch runs** — a PR triggers the workflow on the PR's head branch, so
-  `gh run list --branch <branch>` finds it. To target by PR, `gh pr checks <pr-number>`
-  gives a compact pass/fail summary of all checks for that PR.
-- [GROUND: any non-Actions checks that show up on PRs here (e.g. a deploy provider's
-  check) — name them, or delete this bullet.]
-- **Don't foreground-poll** — `gh run watch` in the background is the one long-running
-  task here; let it self-terminate rather than looping manually.
+This skill sits in `.claude/skills-optional/` (inert). Its agent ships beside it as
+`agent.md` so it is NOT loaded while the skill is inert. When the skill is enabled (moved to
+`.claude/skills/`, e.g. by `/ground-project`), move `agent.md` to
+`.claude/agents/monitor-ci.md` in the same step - the hand-off above names that path.

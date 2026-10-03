@@ -11,7 +11,10 @@ not know what you did**. You cannot verify your own work: you already believe it
 verifier gets the requirement and the changed-file list — nothing else — and must break
 it with live evidence or report PASS with the commands that prove it.
 
-The agent definition lives at `.claude/agents/verifier.md`.
+The agent definition lives at `.claude/agents/verifier.md`. The verification itself is ALWAYS
+that agent, spawned with `Agent(subagent_type: "verifier", model: "opus", ...)` (step 3) - never
+probed in your own context. What stays in this skill is the main-session part: deciding to
+verify, assembling the two inputs, and acting on the verdict.
 
 ## Trigger
 
@@ -62,16 +65,21 @@ and tell it to verify the system.
 Spawn `verifier` as a **subagent** — a fresh context, not a section of your own reasoning.
 Verifying inside your own context inherits your assumptions and defeats the whole point.
 
-Prompt shape:
+Prompt shape - always this exact call, with `model: "opus"` set explicitly (a subagent started
+without one inherits the main session's model):
 
 ```
-REQUIREMENT (verbatim from the developer):
-<the quoted requirement>
+Agent(subagent_type: "verifier", model: "opus",
+      description: "Verify <requirement in 3-5 words>",
+      prompt: "REQUIREMENT (verbatim from the developer):
+               <the quoted requirement>
 
-CHANGED FILES:
-<the file list from step 2>
+               CHANGED FILES:
+               <the file list from step 2>
 
-You are not told what was done or why. Prove it is broken.
+               <this project's live-evidence bar from step 4 and the four failure modes from step 5>
+
+               You are not told what was done or why. Prove it is broken.")
 ```
 
 One verifier per requirement. If the developer asked for several independent things,
@@ -139,6 +147,26 @@ every line is a command actually run and its actual output.
 If the verifier could not run anything at all, say so in one line and mark the whole
 change UNVERIFIED. That is the honest outcome, not a failure of the protocol.
 
+### Acting on the findings (a FAIL, a `/code-review` finding, a Dependabot or PR comment)
+
+1. **Read every finding before touching any.** If one is unclear, stop and clarify it
+   first - findings are often related, and fixing the clear half first builds on a guess.
+2. **Reproduce each one yourself** with the command its evidence names, and write down
+   `REPRODUCED` or `NOT REPRODUCED` plus that command's output. A finding you cannot
+   reproduce is not "wrong" yet - say what you could not run.
+3. **Push back only with counter-evidence**, never with an opinion: the command and its
+   output showing the finding does not hold here (wrong stack, the code path is unused -
+   grep it, a prior owner decision recorded in CLAUDE.md). A rejected finding still goes to
+   the next fresh verifier, which may disagree.
+4. **One fix, one test, per finding**, in the order: breaks / security first, then simple,
+   then structural. Re-run the gates after each, not once at the end.
+5. **No performative replies.** State the fix and where it is ("Fixed: X in file:line"),
+   not agreement. A reviewer suggesting a "proper" feature gets a usage grep first: an
+   unused path is removed (YAGNI), not built out.
+6. **Reply where the finding lives** - an inline PR comment is answered in its thread
+   (`gh api repos/<owner>/<repo>/pulls/<pr>/comments/<id>/replies -f body=...`), not as a new
+   PR comment.
+
 ---
 
 ## The verifier fans out — do not plan its probes
@@ -156,6 +184,8 @@ evidence; only the verifier votes.
    added between them. Runtime speed of the fan-out is still **UNMEASURED**.
 2. **A user-scope copy is a separate file, not a link.** Editing one silently leaves the other
    stale. Change the repo copy and re-copy it in the same turn.
+
+Its helpers run on `opus` too - `verifier.md` tells it to pass `model: "opus"` on every helper.
 So hand it the requirement and the changed-file list and let it plan its own coverage. Do
 not pre-split the work, do not spawn your own helpers alongside it, and do not narrow its
 scope to the part you think is risky. A serial verification of a real change took about 12
@@ -180,3 +210,9 @@ minutes and 40 tool calls; the fan-out exists to cut that, never to lower the ba
   evidence log) — every one of the four modes is a defect that shipped past a self-review
   first. `/ground-project` writes the start / probe / stop / data-store / source-glob
   facts for this repo.
+- 2026-10-03: added "Acting on the findings", merged from `receiving-code-review` in
+  claude-code-templates (`cli-tool/components/skills/development/receiving-code-review/`
+  @ 8b1f883, MIT, (c) 2025 Daniel (San) Avila), via a downstream project's copy. Kept: read all
+  before fixing, clarify first, reproduce against the codebase, one fix + one test each, YAGNI
+  grep, reply in-thread. Tightened: every rejection needs counter-evidence output, and the next
+  fresh verifier still runs - the "do not argue the finding away" rule above stands.

@@ -34,7 +34,8 @@ other. The usual split:
 - **Reach** — does it apply everywhere the requirement implies, or only where you looked?
 
 Dispatch these as **multiple Agent tool calls in a single message** so they run
-concurrently. Give each helper exactly three things: the requirement verbatim, its one
+concurrently, each with `model: "opus"` set explicitly (a helper started without one inherits the
+main session's model). Give each helper exactly three things: the requirement verbatim, its one
 probe, and the instruction to return ONLY numbered evidence lines — each a command
 actually run plus its actual output — and to fix nothing.
 

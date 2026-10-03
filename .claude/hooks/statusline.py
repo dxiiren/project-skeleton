@@ -59,6 +59,38 @@ def bar(pct, cells=5):
     return "▮" * filled + "▯" * (cells - filled)
 
 
+def git_segment(cwd):
+    """`branch`, plus `wt of <main project>` inside a linked git worktree; None outside git.
+
+    The branch/worktree idea is adapted from claude-code-templates
+    cli-tool/components/settings/statusline/worktree-context-statusline.py (@ 8b1f883, MIT,
+    (c) 2025 Daniel (San) Avila) - plain text instead of its glyph, which renders double-width.
+    """
+    import subprocess
+
+    def git(*args):
+        out = subprocess.run(
+            ["git", "-C", cwd, *args], capture_output=True, text=True, timeout=1
+        )
+        return out.stdout.strip() if out.returncode == 0 else ""
+
+    try:
+        branch = git("rev-parse", "--abbrev-ref", "HEAD")
+        if not branch:
+            return None
+        if branch == "HEAD":
+            branch = "@" + git("rev-parse", "--short", "HEAD")
+        git_dir = os.path.abspath(os.path.join(cwd, git("rev-parse", "--git-dir")))
+        common = os.path.abspath(os.path.join(cwd, git("rev-parse", "--git-common-dir")))
+    except Exception:
+        return None
+    seg = branch
+    if os.path.normcase(git_dir) != os.path.normcase(common):
+        main = os.path.basename(os.path.dirname(common.rstrip("/\\")))
+        seg += f" {DIM}wt of {main}{RESET}"
+    return seg
+
+
 def build(data):
     segs = []
 
@@ -70,6 +102,12 @@ def build(data):
     if project_dir:
         name = os.path.basename(project_dir.rstrip("/\\"))
         segs.append(f"{DIM}{name}{RESET}")
+
+    # 2b. Git branch, and which project a linked worktree belongs to
+    cwd = (data.get("workspace") or {}).get("current_dir") or os.getcwd()
+    branch = git_segment(cwd)
+    if branch:
+        segs.append(branch)
 
     # 3. Model + effort
     model = (data.get("model") or {}).get("display_name")

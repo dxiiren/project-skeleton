@@ -135,7 +135,7 @@
           {
             "type": "command",
             "timeout": 15,
-            "command": "bash -c 'p=$(cat); case \"$p\" in *push*) printf \"%s\" \"$p\" | python \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_force_push.py\" ;; esac'"
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/no_force_push.py\"; if [ -f \"$f\" ] && command -v python >/dev/null 2>&1; then python \"$f\"; fi"
           }
         ]
       }

@@ -30,6 +30,11 @@ BLOCK = [
     "git push --m origin", "git push --mi origin", "git -c remote.origin.mirror=true push origin",
     "git config remote.origin.mirror true && git push origin", "git push @a origin main",
     "$a=@('-f'); git push @a origin main",
+    "git send-pack --force ../bare.git main", "git config remote.origin.mirror true",
+    "git remote add --mirror=push bk ../bare.git", "git remote add --mirror bk ../bare.git",
+    "M=true git --config-env=remote.origin.mirror=M push origin", "git --config-env remote.origin.mirror=M push origin",
+    "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.mirror GIT_CONFIG_VALUE_0=true git push origin",
+    "git p\\ush -f origin main",
 ]
 ALLOW = [
     "git push", "git push -u origin feat/x", "git push --follow-tags", "git push -v origin main", "git -C . push origin main",
@@ -40,9 +45,34 @@ ALLOW = [
     "git push -u origin \"$(git branch --show-current)\"", "git push -u origin \"$(git rev-parse --abbrev-ref HEAD)\"",
     "git push --porcelain origin main", "git push --no-verify origin x", "git push --tags origin",
     "ls | xargs echo && git push origin main",
+    "git remote add origin https://example.invalid/x.git", "git remote -v", "git config remote.origin.url x",
+    "git --config-env=user.name=N commit -m x", "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=a git push",
 ]
 miss = [c for c in BLOCK if not nfp.check(c)] + [c for c in ALLOW if nfp.check(c)]
+
+# The hook AS WIRED in settings.json (a text pre-filter there once hid send-pack and git config from it)
+import json
+import shutil
+import subprocess
+
+root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+settings = json.load(open(os.path.join(root, ".claude", "settings.json"), encoding="utf-8"))
+wired = [h for h in settings["hooks"]["PreToolUse"] if "no_force_push" in json.dumps(h)]
+if len(wired) != 1 or wired[0]["matcher"] != "Bash|PowerShell":
+    miss.append("settings.json: no_force_push must be wired once with matcher Bash|PowerShell")
+else:
+    cmd = wired[0]["hooks"][0]["command"]
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=root)
+    for tool, c, want in [("Bash", "git send-pack --force ../b.git main", 2), ("PowerShell", "git config remote.origin.mirror true", 2),
+                          ("Bash", "git push -" + "f origin feature", 2), ("Bash", "git push -u origin main", 0), ("Bash", "ls -la", 0)]:
+        payload = json.dumps({"tool_name": tool, "tool_input": {"command": c}})
+        # Claude Code runs hook commands through bash (Git Bash on Windows) - so does this check. shutil.which
+        # follows PATH; a bare "bash" makes Windows pick System32's WSL bash.exe first.
+        got = subprocess.run([shutil.which("bash") or "bash", "-c", cmd], input=payload, text=True,
+                             capture_output=True, env=env).returncode
+        if got != want:
+            miss.append(f"wired hook: {tool} {c!r} exit {got}, want {want}")
 for c in miss:
     print("MISCLASSIFIED:", c)
-print(f"{len(BLOCK)} block + {len(ALLOW)} allow cases, {len(miss)} misclassified")
+print(f"{len(BLOCK)} block + {len(ALLOW)} allow cases + 5 wired-hook runs, {len(miss)} misclassified")
 sys.exit(1 if miss else 0)

@@ -106,7 +106,7 @@ Tokens are delimited by doubled at-signs. Two tiers:
 | `@@STACK_TABLE_ROWS@@` | CLAUDE.md | `\| Layer \| Tech \| detail \|` rows from a real repo reading |
 | `@@LAYOUT_TREE@@` | CLAUDE.md + README | short annotated file tree |
 | `@@TOOLCHAIN_SUMMARY@@` | CLAUDE.md | e.g. `Node LTS` / `PHP 8.4 + Composer` / `Temurin JDK` |
-| `@@BOOTSTRAP_LINE@@` | CLAUDE.md | laravel → `` `just bootstrap`, then`` · node → `` `just install`, then`` · static/cli → `run` |
+| `@@BOOTSTRAP_LINE@@` | CLAUDE.md | laravel → `` `just bootstrap`, then`` · node → `` `just deps`, then`` · static/cli → `run` |
 | `@@DEV_GOTCHAS@@` | CLAUDE.md | bullet list of real gotchas hit during verify, or delete the token line if none |
 | `@@PREREQ_ROWS@@` | README | one row per stack tool (installed-by column = `setup.ps1`) |
 | `@@QUICKSTART_STEPS@@` | README | numbered commands after reopening the shell |
@@ -195,7 +195,7 @@ Poll readiness with `curl.exe` (NEVER the PowerShell `curl` alias) every 2 s, ma
 |---|---|---|---|
 | php-laravel | `just bootstrap` then `just start` | `curl.exe -s -o NUL -w "%{http_code}" http://127.0.0.1:PORT/` < 400 (200/302 ok, 500 fails) | `just stop` |
 | php-plain | `just start` (`php -S`) | GET `/` or `/index.php` returns 200 + non-empty body (DB-needing pages may warn — note it) | `just stop` |
-| node-vite / node-nuxt | `just install` + `just build` exit 0, then `just start` | GET `http://localhost:PORT/` 200 with app HTML — MUST use `localhost`, not `127.0.0.1` | `just stop` |
+| node-vite / node-nuxt | `just deps` + `just build` exit 0, then `just start` | GET `http://localhost:PORT/` 200 with app HTML — MUST use `localhost`, not `127.0.0.1` | `just stop` |
 | static | `just start` | GET `/index.html` 200 | `just stop` |
 | cli-java | `just build` + `just run` | both exit 0, no stack trace; pipe `sample-input.txt` if the app reads stdin (create one with plausible values, commit it) | n/a |
 | cli-cpp | `just build` + `just run` | same as cli-java | n/a |

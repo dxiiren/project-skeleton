@@ -20,7 +20,7 @@
   if the package.json dev script already hardcodes flags, reconcile there.
 - **E2E (Cypress etc.):** do NOT add an e2e recipe unless it runs headless reliably; note it
   in `.docs/` instead.
-- **Boot-verify:** `just install` + `just build` exit 0, then `just start`, then GET
+- **Boot-verify:** `just deps` + `just build` exit 0, then `just start`, then GET
   `http://localhost:@@PORT@@/` returns 200 with app HTML. Stop with `just stop`.
 
 ## Related docs

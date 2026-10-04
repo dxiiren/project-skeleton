@@ -8,6 +8,10 @@ port := env_var_or_default('PORT', '@@PORT@@')
 default:
     @just --list
 
+# First-time machine setup: installs the toolchain this repo needs (runs setup.ps1). Safe to re-run.
+install:
+    @powershell.exe -NoProfile -ExecutionPolicy Bypass -File '{{justfile_directory()}}/setup.ps1'
+
 # ─── Guards ───────────────────────────────────────────────
 
 # Node/npm — installed by setup.ps1; needed by every recipe here.
@@ -17,8 +21,8 @@ _require-node:
 
 # ─── App lifecycle ───────────────────────────────────────
 
-# Install dependencies (npm ci when the lockfile allows, else npm install).
-install: _require-node
+# Install the npm dependencies (npm ci when the lockfile allows, else npm install).
+deps: _require-node
     if (Test-Path package-lock.json) { npm ci } else { npm install }
 
 # Runs `stop` first so a previous run's server doesn't linger. The dev server's node

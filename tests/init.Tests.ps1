@@ -526,6 +526,131 @@ Describe 'initial-setup.ps1 — the machine bootstrap itself' {
     }
 }
 
+# ===================================================================================
+# scripts/install-just.ps1 -- the "I have no `just` yet" bootstrap, and the `install`
+# recipe every stack justfile carries. The script is CANONICAL here: iuc, aurum and
+# akmal-resume-website copy it byte-for-byte, so it must stay generic.
+# ===================================================================================
+$installStacks = @(
+    @{ Stack = 'static';      Arguments = @('-Name', 'test-i-static', '-Stack', 'static', '-Port', '8601', '-Docroot', '.') }
+    @{ Stack = 'cli-java';    Arguments = @('-Name', 'test-i-java', '-Stack', 'cli-java', '-MainClass', 'Main') }
+    @{ Stack = 'cli-cpp';     Arguments = @('-Name', 'test-i-cpp', '-Stack', 'cli-cpp', '-Src', 'main.cpp') }
+    @{ Stack = 'cli-jupyter'; Arguments = @('-Name', 'test-i-jup', '-Stack', 'cli-jupyter', '-Port', '8602') }
+    @{ Stack = 'node-nuxt';   Arguments = @('-Name', 'test-i-nuxt', '-Stack', 'node-nuxt', '-Port', '8603') }
+    @{ Stack = 'node-vite';   Arguments = @('-Name', 'test-i-vite', '-Stack', 'node-vite', '-Port', '8604') }
+    @{ Stack = 'php-laravel'; Arguments = @('-Name', 'test-i-lara', '-Stack', 'php-laravel', '-Port', '8605') }
+    @{ Stack = 'php-plain';   Arguments = @('-Name', 'test-i-plain', '-Stack', 'php-plain', '-Port', '8606', '-Docroot', 'public') }
+    @{ Stack = 'vbnet';       Arguments = @('-Name', 'test-i-vb', '-Stack', 'vbnet', '-MainClass', 'Lab Runner', '-Src', 'Lab Runner.sln') }
+)
+
+Describe 'scripts/install-just.ps1 — the just bootstrap' {
+
+    BeforeAll {
+        $script:ijPath = Join-Path $script:RepoRoot 'scripts\install-just.ps1'
+        $script:ijText = if (Test-Path $script:ijPath) { [System.IO.File]::ReadAllText($script:ijPath) } else { '' }
+        $script:psExe  = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    }
+
+    It 'exists' {
+        $script:ijPath | Should -Exist
+    }
+
+    It 'parses under Windows PowerShell 5.1 — the only shell a fresh laptop has' {
+        $probe = '$e = $null; [void][System.Management.Automation.Language.Parser]::ParseFile(' +
+                 "'$script:ijPath'" + ', [ref]$null, [ref]$e); ' +
+                 'if ($e.Count) { $e | ForEach-Object { $_.Message }; exit 1 }'
+        $out = & $script:psExe -NoProfile -Command $probe 2>&1 | Out-String
+        $LASTEXITCODE | Should -Be 0 -Because "5.1 parse errors: $out"
+    }
+
+    It 'carries no tokens and no personal paths — it is copied byte-for-byte into other repos' {
+        $script:ijText | Should -Not -Match '@[@]'
+        $script:ijText | Should -Not -Match '(?i)C:\\Users\\[a-z]'
+        $script:ijText | Should -Not -Match '(?i)kollect'
+    }
+
+    It 'uses winget Casey.Just, the Links fix, and both fallbacks' {
+        $script:ijText | Should -Match 'Casey\.Just'
+        $script:ijText | Should -Match '-1978335189'
+        $script:ijText | Should -Match 'WinGet\\Links'
+        $script:ijText | Should -Match 'scoop'
+        $script:ijText | Should -Match 'rust-just'
+        $script:ijText | Should -Match 'Tls12'
+    }
+
+    It '-DryRun exits 0 and prints the plan' {
+        $out = & $script:psExe -NoProfile -ExecutionPolicy Bypass -File $script:ijPath -DryRun 2>&1 | Out-String
+        $LASTEXITCODE | Should -Be 0 -Because $out
+        $out | Should -Match 'winget'
+        $out | Should -Match 'Casey\.Just'
+    }
+
+    It '-DryRun with just off PATH shows it would install and still exits 0' {
+        $saved = $env:PATH
+        try {
+            $env:PATH = (($env:PATH -split ';') | Where-Object {
+                $_ -and -not (Test-Path (Join-Path $_ 'just.exe')) }) -join ';'
+            $out = & $script:psExe -NoProfile -ExecutionPolicy Bypass -File $script:ijPath -DryRun 2>&1 | Out-String
+            $code = $LASTEXITCODE
+        } finally { $env:PATH = $saved }
+        $code | Should -Be 0 -Because $out
+        $out | Should -Match 'DRY RUN'
+        $out | Should -Match 'winget install --id Casey\.Just'
+        $out | Should -Not -Match '\[OK\] just already installed'
+    }
+}
+
+Describe 'stack justfiles — the install recipe' {
+
+    It '<_> has an install recipe that runs setup.ps1' -ForEach @(
+        'cli-cpp','cli-java','cli-jupyter','node-nuxt','node-vite','php-laravel','php-plain','static','vbnet'
+    ) {
+        $text = [System.IO.File]::ReadAllText((Join-Path $script:RepoRoot "stacks\$_\justfile"))
+        $text | Should -Match '(?m)^install:\s*$'
+        $text | Should -Match "(?m)^\s+@powershell\.exe -NoProfile -ExecutionPolicy Bypass -File '\{\{justfile_directory\(\)\}\}/setup\.ps1'\s*$"
+    }
+
+    It '<_> renamed the npm install recipe to deps' -ForEach @('node-nuxt', 'node-vite') {
+        $text = [System.IO.File]::ReadAllText((Join-Path $script:RepoRoot "stacks\$_\justfile"))
+        $text | Should -Match '(?m)^deps: _require-node'
+        $text | Should -Not -Match '(?m)^install: _require-node'
+        $notes = [System.IO.File]::ReadAllText((Join-Path $script:RepoRoot "stacks\$_\NOTES.md"))
+        $notes | Should -Not -Match 'just install'
+        $notes | Should -Match 'just deps'
+    }
+
+    It 'the skeleton root justfile keeps its literal guard marker' {
+        [System.IO.File]::ReadAllText((Join-Path $script:RepoRoot 'justfile')) | Should -Match '@[@]'
+    }
+}
+
+Describe 'init.ps1 — <Stack> keeps scripts/install-just.ps1 and lists install' -ForEach $installStacks {
+
+    BeforeAll {
+        $copy   = New-SkeletonCopy
+        $result = Invoke-Init -Root $copy -Arguments $Arguments
+        $listing = ''
+        if (Get-Command just -ErrorAction SilentlyContinue) {
+            Push-Location $copy
+            try { $listing = & just --list 2>&1 | Out-String } finally { Pop-Location }
+        }
+    }
+
+    It 'scaffolds' {
+        $result.ExitCode | Should -Be 0
+    }
+
+    It 'keeps scripts/install-just.ps1, identical to the canonical copy' {
+        $kept = Join-Path $copy 'scripts\install-just.ps1'
+        $kept | Should -Exist
+        (Get-FileHash $kept).Hash | Should -Be (Get-FileHash (Join-Path $script:RepoRoot 'scripts\install-just.ps1')).Hash
+    }
+
+    It 'just --list shows install' -Skip:(-not (Get-Command just -ErrorAction SilentlyContinue)) {
+        $listing | Should -Match '(?m)^\s+install\b'
+    }
+}
+
 Describe 'tools/claude-local/install.ps1 — the opt-in local-model launcher' {
 
     BeforeAll {

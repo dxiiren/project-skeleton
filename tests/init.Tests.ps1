@@ -619,6 +619,14 @@ Describe 'stack justfiles — the install recipe' {
         $notes | Should -Match 'just deps'
     }
 
+    It 'the skeleton root justfile has an install recipe that runs initial-setup.ps1' {
+        # Same command as every repo in the family: on the skeleton itself `just install`
+        # bootstraps the machine (initial-setup.ps1); in a scaffolded project it runs setup.ps1.
+        $text = [System.IO.File]::ReadAllText((Join-Path $script:RepoRoot 'justfile'))
+        $text | Should -Match '(?m)^install:\s*$'
+        $text | Should -Match "(?m)^\s+@powershell\.exe -NoProfile -ExecutionPolicy Bypass -File '\{\{justfile_directory\(\)\}\}/initial-setup\.ps1'\s*$"
+    }
+
     It 'the skeleton root justfile keeps its literal guard marker' {
         [System.IO.File]::ReadAllText((Join-Path $script:RepoRoot 'justfile')) | Should -Match '@[@]'
     }

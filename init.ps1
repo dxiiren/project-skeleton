@@ -16,6 +16,7 @@
 param(
     [string]$Name,
     [string]$Stack,
+    [ValidateRange(1, 65535)]
     [int]$Port,
     [string]$MainClass,
     [string]$Src,

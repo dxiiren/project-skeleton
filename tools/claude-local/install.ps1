@@ -95,7 +95,9 @@ $existing  = $null
 $endpoints = [ordered]@{}
 $defaultName = ''
 if (Test-Path $cfgPath) {
-    try { $existing = Get-Content $cfgPath -Raw | ConvertFrom-Json } catch { $existing = $null }
+    # ReadAllText, not Get-Content: 5.1 reads a BOM-less file in the ANSI code page and
+    # would mangle every non-ASCII label before writing it back (config.json is UTF-8, no BOM).
+    try { $existing = [System.IO.File]::ReadAllText($cfgPath, $utf8NoBom) | ConvertFrom-Json } catch { $existing = $null }
 }
 if ($existing) {
     $eps = Get-Prop $existing 'endpoints'

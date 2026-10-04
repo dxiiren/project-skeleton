@@ -13,6 +13,10 @@ port     := env_var_or_default('PORT', '@@PORT@@')
 default:
     @just --list
 
+# First-time machine setup: installs the toolchain this repo needs (runs setup.ps1). Safe to re-run.
+install:
+    @powershell.exe -NoProfile -ExecutionPolicy Bypass -File '{{justfile_directory()}}/setup.ps1'
+
 # ─── Guards ───────────────────────────────────────────────
 # Fail fast with a "run setup.ps1" message when a required tool is missing, instead of
 # letting a recipe explode with a cryptic error deep in its body. Private: hidden from

@@ -9,8 +9,16 @@ PowerShell + winget (stock Windows 10/11). Everything else is installed by `setu
 
 ## One-time machine setup
 
+If `just` is not installed yet, get it first (winget, with the PATH fix), then open a new terminal:
+
 ```powershell
-pwsh ./setup.ps1
+powershell -ExecutionPolicy Bypass -File scripts/install-just.ps1
+```
+
+Then:
+
+```powershell
+just install     # runs setup.ps1 (or directly: pwsh ./setup.ps1)
 ```
 
 Idempotent — safe to re-run; a second run must be all-`[OK]`. Then CLOSE AND REOPEN

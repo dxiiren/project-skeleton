@@ -44,8 +44,8 @@ Machines that already have the toolchain skip step 0 entirely.
 **No `just` yet?** `initial-setup.ps1` installs it, but you can also get it on its own with
 `powershell -ExecutionPolicy Bypass -File scripts/install-just.ps1` (winget `Casey.Just`, the
 WinGet `Links` PATH fix, then scoop / `uv tool install rust-just` as fallbacks; `-DryRun` prints
-the plan). Open a new terminal afterwards. In a scaffolded project, `just install` then runs
-`setup.ps1` for you.
+the plan). Open a new terminal afterwards. On a clone of this skeleton, `just install` re-runs
+`initial-setup.ps1`; in a scaffolded project, `just install` runs `setup.ps1` for you.
 
 ### Steps 1–4 — every new project
 

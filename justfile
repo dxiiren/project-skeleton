@@ -11,6 +11,10 @@ set shell := ["powershell.exe", "-NoProfile", "-Command"]
 default:
     @just --list
 
+# First-time machine setup: Git, PowerShell 7, Node, Claude Code, uv, just, gh (runs initial-setup.ps1). Safe to re-run.
+install:
+    @powershell.exe -NoProfile -ExecutionPolicy Bypass -File '{{justfile_directory()}}/initial-setup.ps1'
+
 # ─── Guards ───────────────────────────────────────────────
 
 # Pester 5+ must be visible to pwsh (PowerShell 7) — the Windows-inbox Pester 3 can't

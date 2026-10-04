@@ -2,7 +2,7 @@
 name: generate-playwright-tests
 description: Use when the developer says 'generate playwright tests', 'write e2e tests for [page]', 'automate tests for [page]', or when authoring any Playwright spec — derives stable accessibility-tree locators via the Playwright MCP (browser_snapshot + browser_generate_locator), writes a two-layer spec, runs it, and pastes the result before claiming done. Runs as a subagent; the generate-playwright-tests skill hands the work here.
 tools: Read, Grep, Glob, Bash, PowerShell, Edit, Write, ToolSearch, mcp__playwright
-model: opus
+model: sonnet
 ---
 
 # generate-playwright-tests — Authoring Rulebook (this project's e2e specs)

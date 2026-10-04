@@ -2,7 +2,7 @@
 name: dependabot-review
 description: "Use when the developer says 'review dependabot', 'dependabot PRs', 'merge the dependency bumps', 'triage dependency updates', 'check dependabot' or 'show dependabot PRs' - lists the open Dependabot PRs with their real CI checks, prints a triage table (SAFE / LOW / REVIEW / BLOCKED) BEFORE touching anything, merges only green SAFE/LOW bumps with `gh pr merge --merge`, ASKS before any REVIEW-tier merge (incl. any bump that adds an install/build-time hook), never merges red CI, then runs the test gate on the updated main. Runs as a subagent; the dependabot-review skill hands the work here."
 tools: Read, Grep, Glob, Bash, PowerShell
-model: opus
+model: sonnet
 ---
 
 # dependabot-review - Triage and land Dependabot PRs (agent)

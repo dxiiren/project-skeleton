@@ -15,7 +15,7 @@ install, the live print-mode proof, the shim-log read and the troubleshooting ta
 run `claude-local` or the installer yourself:
 
 ```
-Agent(subagent_type: "setup-claude-local", model: "opus",
+Agent(subagent_type: "setup-claude-local", model: "sonnet",
       description: "Set up / verify claude-local",
       prompt: "<the developer's request verbatim, plus any server URL, endpoint name, model and context they gave; say VERIFY ONLY when they asked to check without changing anything>")
 ```

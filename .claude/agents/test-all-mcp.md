@@ -2,7 +2,7 @@
 name: test-all-mcp
 description: "Use when the developer says 'test all mcp', 'check mcp status', 'are the mcps working', 'mcp health check', 'test the mcp servers', or 'which mcps are up' — builds the MCP roster from the real config, then in the LIVE session calls each enabled server's smoke-test tool from checks/ and reports a per-server PASS/FAIL/SKIP table. Also the home for the per-server .txt check prompts that setup-mcp writes. Runs as a subagent; the test-all-mcp skill hands the work here."
 tools: Read, Grep, Glob, Bash, ToolSearch, mcp__context7, mcp__github, mcp__playwright
-model: opus
+model: sonnet
 ---
 
 # Test All MCP — live MCP health check (agent)

@@ -28,7 +28,7 @@ this session can do them, and one after:
    (paths). For a second opinion, state the problem neutrally - do not pass on your conclusion.
 
 ```
-Agent(subagent_type: "llm-transfer", model: "opus",
+Agent(subagent_type: "llm-transfer", model: "sonnet",
       description: "Assemble the external-LLM handoff",
       prompt: "Topic: <topic>. Target tool: <gpt|ollama|gemini|codex|...>. Mode: <cold|agentic>.
                Ask: <continue the work | second opinion>. Developer's request: <verbatim>.

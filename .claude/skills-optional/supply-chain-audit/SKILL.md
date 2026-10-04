@@ -1,7 +1,7 @@
 ---
 name: supply-chain-audit
 description: "Use when the developer says 'supply chain audit', 'audit dependencies', 'check for compromised packages', 'are our dependencies safe', 'audit the lockfile' or '/supply-chain-audit' - a read-only supply-chain audit that auto-detects the ecosystems present (npm, uv/pip, composer, maven), audits known vulnerabilities against the LOCKFILE, checks lock freshness and install-time hooks, the known-compromised-package IOC list, container image digest pins and GitHub Actions SHA pins, and reports ranked findings (CRITICAL/HIGH/MEDIUM/LOW) with the exact fix command - never applying one."
-model: opus
+model: sonnet
 ---
 
 # supply-chain-audit - read-only dependency and CI supply-chain audit
@@ -15,7 +15,7 @@ checks and the severity tiers live in the read-only `supply-chain-audit` agent
 (`.claude/agents/supply-chain-audit.md`). Hand the work to it - do not run the audits yourself:
 
 ```
-Agent(subagent_type: "supply-chain-audit", model: "opus",
+Agent(subagent_type: "supply-chain-audit", model: "sonnet",
       description: "Supply-chain audit",
       prompt: "Scope: <npm|python|composer|maven|docker|actions|licenses|all - default all>. Developer said: <their words verbatim>.")
 ```

@@ -31,7 +31,7 @@ conversation, so you must hand it what only the conversation knows.
 3. Hand off:
 
    ```
-   Agent(subagent_type: "claude-transfer", model: "opus",
+   Agent(subagent_type: "claude-transfer", model: "sonnet",
          description: "Draft the handoff brief",
          prompt: "MODE: DRAFT. Topic: <topic>. Session notes: <the notes from step 2>")
    ```
@@ -47,7 +47,7 @@ conversation, so you must hand it what only the conversation knows.
 ## RESUME (pick up a brief)
 
 ```
-Agent(subagent_type: "claude-transfer", model: "opus",
+Agent(subagent_type: "claude-transfer", model: "sonnet",
       description: "Re-ground from the handoff brief",
       prompt: "MODE: RESUME. Brief: <latest | the named file>.")
 ```

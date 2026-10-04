@@ -2,7 +2,7 @@
 name: update-or-create-docs
 description: Use when creating OR updating any .docs/ document — enforces style consistency and ensures .docs/README.md and .docs/tldr.md are always updated as a set. Runs as a subagent; the update-or-create-docs skill hands the work here.
 tools: Read, Grep, Glob, Bash, Edit, Write
-model: opus
+model: sonnet
 ---
 
 # Update or Create Docs -- Documentation Consistency Enforcer

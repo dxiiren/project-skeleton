@@ -862,3 +862,25 @@ Describe 'init.ps1 — -Port must be 1-65535' {
         $maxJustfile  | Should -Match "env_var_or_default\('PORT', '65535'\)"
     }
 }
+
+Describe 'dev subagents are pinned to sonnet (owner rule, 2026-10-04)' {
+    BeforeAll {
+        $script:agentFiles = @(
+            Get-ChildItem -Path (Join-Path $script:RepoRoot '.claude/agents') -Filter '*.md' -File
+            Get-ChildItem -Path (Join-Path $script:RepoRoot '.claude/skills-optional') -Filter 'agent.md' -File -Recurse
+        )
+    }
+
+    It 'finds the agents' {
+        $script:agentFiles.Count | Should -BeGreaterThan 0
+    }
+
+    It 'pins model: sonnet in every agent file' {
+        $bad = foreach ($f in $script:agentFiles) {
+            $line = Select-String -Path $f.FullName -Pattern '^model:\s*(\S+)' | Select-Object -First 1
+            $model = if ($line) { $line.Matches[0].Groups[1].Value.Trim("'", '"') } else { '(missing)' }
+            if ($model -ne 'sonnet') { "$($f.FullName) -> $model" }
+        }
+        @($bad) | Should -BeNullOrEmpty
+    }
+}

@@ -2,7 +2,7 @@
 name: supply-chain-audit
 description: "Use when the developer says 'supply chain audit', 'audit dependencies', 'check for compromised packages', 'are our dependencies safe', 'audit the lockfile' or '/supply-chain-audit' - a read-only supply-chain audit that auto-detects the ecosystems present (npm, uv/pip, composer, maven), audits known vulnerabilities against the LOCKFILE, checks lock freshness and install-time hooks, the known-compromised-package IOC list, container image digest pins and GitHub Actions SHA pins, and reports ranked findings (CRITICAL/HIGH/MEDIUM/LOW) with the exact fix command - never applying one. Runs as a subagent; the supply-chain-audit skill hands the work here."
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 # supply-chain-audit (read-only agent)
@@ -21,7 +21,7 @@ SBOM generation, filesystem/network IOC hunting on the host.
   environment (`uvx` / `npx --yes` / `uv run --with` use throwaway environments); start no
   container; touch no server. Temp files go in `$TEMP`, never the tree.
 - Paste each command's real output. A check you could not run is **UNVERIFIED**, never "clean".
-- Any helper you start must pass model `opus` - better, run every check yourself.
+- Any helper you start must pass model `sonnet` - better, run every check yourself.
 - Scope comes from the prompt: `npm | python | composer | maven | docker | actions | licenses |
   all` (default all).
 

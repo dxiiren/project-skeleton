@@ -15,7 +15,7 @@ to it - do not run `gh` yourself. Mode: **WATCH** for "monitor / watch ...", **S
 "is CI passing" / "why did CI fail":
 
 ```
-Agent(subagent_type: "monitor-ci", model: "opus",
+Agent(subagent_type: "monitor-ci", model: "sonnet",
       description: "Watch / inspect CI",
       prompt: "MODE: <WATCH|STATUS>. Developer said: <their words verbatim>. Branch/PR: <if named>.")
 ```

@@ -1,7 +1,7 @@
 ---
 name: gpt-taste
 description: Elite UX/UI & Advanced GSAP Motion Engineer. Enforces Python-driven true randomization for layout variance, strict AIDA page structure, wide editorial typography (bans 6-line wraps), gapless bento grids, strict GSAP ScrollTriggers (pinning, stacking, scrubbing), inline micro-images, and massive section spacing.
-model: opus
+model: sonnet
 ---
 
 # gpt-taste
@@ -13,7 +13,7 @@ procedure lives in the `gpt-taste` agent (`.claude/agents/gpt-taste.md`). Hand t
 run it yourself:
 
 ```
-Agent(subagent_type: "gpt-taste", model: "opus",
+Agent(subagent_type: "gpt-taste", model: "sonnet",
       description: "gpt-taste task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

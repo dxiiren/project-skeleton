@@ -2,7 +2,7 @@
 name: antislop-ui
 description: "UI and visual skill for antislop. Use when building or editing any interface: color, layout, components, motion. Load with the core."
 allowed-tools: Read Write Edit Glob Grep
-model: opus
+model: sonnet
 ---
 
 # antislop-ui
@@ -14,7 +14,7 @@ procedure lives in the `antislop-ui` agent (`.claude/agents/antislop-ui.md`). Ha
 run it yourself:
 
 ```
-Agent(subagent_type: "antislop-ui", model: "opus",
+Agent(subagent_type: "antislop-ui", model: "sonnet",
       description: "antislop-ui task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

@@ -1,7 +1,7 @@
 ---
 name: dependabot-review
 description: "Use when the developer says 'review dependabot', 'dependabot PRs', 'merge the dependency bumps', 'triage dependency updates', 'check dependabot' or 'show dependabot PRs' - lists the open Dependabot PRs with their real CI checks, prints a triage table (SAFE / LOW / REVIEW / BLOCKED) BEFORE touching anything, merges only green SAFE/LOW bumps with `gh pr merge --merge`, ASKS before any REVIEW-tier merge (incl. any bump that adds an install/build-time hook), never merges red CI, then runs the test gate on the updated main."
-model: opus
+model: sonnet
 ---
 
 # dependabot-review
@@ -18,7 +18,7 @@ the agent cannot ask the developer.
 1. **Triage (always first):**
 
 ```
-Agent(subagent_type: "dependabot-review", model: "opus",
+Agent(subagent_type: "dependabot-review", model: "sonnet",
       description: "Triage Dependabot PRs",
       prompt: "MODE: TRIAGE. Developer said: <their words verbatim>.")
 ```
@@ -32,7 +32,7 @@ Agent(subagent_type: "dependabot-review", model: "opus",
 4. **Merge the approved set:**
 
 ```
-Agent(subagent_type: "dependabot-review", model: "opus",
+Agent(subagent_type: "dependabot-review", model: "sonnet",
       description: "Merge approved Dependabot PRs",
       prompt: "MODE: MERGE. APPROVED: #<n>, #<n>, ... Developer said: <their words verbatim>.")
 ```

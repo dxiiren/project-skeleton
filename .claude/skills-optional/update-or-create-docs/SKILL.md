@@ -14,7 +14,7 @@ lives in the `update-or-create-docs` agent (`.claude/agents/update-or-create-doc
 work to it - do not write the doc yourself:
 
 ```
-Agent(subagent_type: "update-or-create-docs", model: "opus",
+Agent(subagent_type: "update-or-create-docs", model: "sonnet",
       description: "Create or update a .docs/ doc",
       prompt: "<the developer's request verbatim, plus what changed in the code that the doc must now say>")
 ```

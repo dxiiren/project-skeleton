@@ -2,7 +2,7 @@
 name: antislop-ui
 description: "UI and visual skill for antislop. Use when building or editing any interface: color, layout, components, motion. Load with the core. Runs as a subagent; the antislop-ui skill hands the work here."
 tools: Read, Write, Edit, Glob, Grep
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `antislop-ui` skill (anti-slop bundle). The procedure below is the

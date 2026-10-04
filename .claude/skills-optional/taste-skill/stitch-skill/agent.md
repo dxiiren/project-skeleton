@@ -2,7 +2,7 @@
 name: stitch-design-taste
 description: "Semantic Design System Skill for Google Stitch. Generates agent-friendly DESIGN.md files that enforce premium, anti-generic UI standards — strict typography, calibrated color, asymmetric layouts, perpetual micro-motion, and hardware-accelerated performance. Runs as a subagent; the stitch-design-taste skill hands the work here."
 tools: Read, Grep, Glob, Write, Edit, Bash
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `stitch-design-taste` skill (taste-skill bundle). The procedure below is the

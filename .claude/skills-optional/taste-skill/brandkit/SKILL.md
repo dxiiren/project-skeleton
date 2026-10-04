@@ -1,7 +1,7 @@
 ---
 name: brandkit
 description: Premium brand-kit image generation skill for creating high-end brand-guidelines boards, logo systems, identity decks, and visual-world presentations. Trained for minimalist, cinematic, editorial, dark-tech, luxury, cultural, security, gaming, developer-tool, and consumer-app brand systems. Optimized for intentional logo concepting, refined composition, sparse typography, strong symbolic meaning, premium mockups, art-directed imagery, and flexible grid layouts.
-model: opus
+model: sonnet
 ---
 
 # brandkit
@@ -13,7 +13,7 @@ procedure lives in the `brandkit` agent (`.claude/agents/brandkit.md`). Hand the
 run it yourself:
 
 ```
-Agent(subagent_type: "brandkit", model: "opus",
+Agent(subagent_type: "brandkit", model: "sonnet",
       description: "brandkit task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

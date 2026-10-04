@@ -1,7 +1,7 @@
 ---
 name: generate-playwright-tests
 description: Use when the developer says 'generate playwright tests', 'write e2e tests for [page]', 'automate tests for [page]', or when authoring any Playwright spec — derives stable accessibility-tree locators via the Playwright MCP (browser_snapshot + browser_generate_locator), writes a two-layer spec, runs it, and pastes the result before claiming done.
-model: opus
+model: sonnet
 ---
 
 # generate-playwright-tests
@@ -15,7 +15,7 @@ patterns, run-and-paste) lives in the `generate-playwright-tests` agent
 work to it - do not write the test yourself:
 
 ```
-Agent(subagent_type: "generate-playwright-tests", model: "opus",
+Agent(subagent_type: "generate-playwright-tests", model: "sonnet",
       description: "Write a browser test",
       prompt: "<the developer's request verbatim: the page / flow to cover, and any behaviour they named>")
 ```

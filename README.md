@@ -42,7 +42,7 @@ To pass arguments, `iex` won't do — use a scriptblock:
 Machines that already have the toolchain skip step 0 entirely.
 
 **No `just` yet?** `initial-setup.ps1` installs it, but you can also get it on its own with
-`powershell -ExecutionPolicy Bypass -File scripts/install-just.ps1` (winget `Casey.Just`, the
+`powershell -ExecutionPolicy Bypass -File install-just.ps1` (winget `Casey.Just`, the
 WinGet `Links` PATH fix, then scoop / `uv tool install rust-just` as fallbacks; `-DryRun` prints
 the plan). Open a new terminal afterwards. On a clone of this skeleton, `just install` re-runs
 `initial-setup.ps1`; in a scaffolded project, `just install` runs `setup.ps1` for you.
@@ -77,7 +77,7 @@ code, the applicable optional skills enabled, a passing skill audit, and a boot-
 | `initial-setup.ps1` | the **machine** | once per laptop | Git, PowerShell 7, Node LTS, Claude Code, uv + Python, just, gh; `claude-local` on request |
 | `init.ps1` | the **project** | once per project | nothing — it scaffolds files and deletes itself |
 | `setup.ps1` | the **stack** | per project, re-runnable (`just install`) | that stack's toolchain (PHP, JDK, w64devkit, ...) |
-| `scripts/install-just.ps1` | the **machine** | when `just` is missing | `just` alone: winget, the Links PATH fix, scoop / uv fallbacks; shipped into every scaffolded project |
+| `install-just.ps1` | the **machine** | when `just` is missing | `just` alone: winget, the Links PATH fix, scoop / uv fallbacks; shipped into every scaffolded project |
 
 `init.ps1` removes `initial-setup.ps1` along with the rest of the scaffolding, so a
 scaffolded project ships exactly one `setup.ps1`.
@@ -101,7 +101,7 @@ scaffolded project ships exactly one `setup.ps1`.
 ```
 project-skeleton/
   initial-setup.ps1         # per-MACHINE bootstrap (step 0) — removed at init
-  scripts/install-just.ps1  # installs `just` alone (canonical copy; kept in scaffolded projects)
+  install-just.ps1          # installs `just` alone (canonical copy; kept in scaffolded projects)
   tools/claude-local/       # claude-local: Claude Code on a self-hosted vLLM model (step 0 opt-in) — removed at init
   init.ps1                  # the scaffolder (step 2 above) — deletes itself when done
   justfile                  # skeleton DEV recipes (just test) — replaced by the stack's at init

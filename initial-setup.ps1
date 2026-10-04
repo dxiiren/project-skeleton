@@ -274,7 +274,7 @@ if ($pyPath) {
 }
 
 # ---------- 7. just (task runner) ----------
-# Same steps as scripts/install-just.ps1 (winget Casey.Just, then the WinGet Links PATH
+# Same steps as install-just.ps1 (winget Casey.Just, then the WinGet Links PATH
 # gap, then uv as a last resort). When the script is on disk, run it (as a child process:
 # it calls `exit`); when this file came from `irm | iex` there is no repo, so do the steps inline.
 Refresh-Path
@@ -282,9 +282,9 @@ if (Test-Command "just") {
     $justVer = & just --version 2>&1 | Select-Object -First 1
     Write-Host "[OK] just already installed: $justVer" -ForegroundColor Green
 } else {
-    $justScript = if ($PSScriptRoot) { Join-Path $PSScriptRoot "scripts\install-just.ps1" } else { $null }
+    $justScript = if ($PSScriptRoot) { Join-Path $PSScriptRoot "install-just.ps1" } else { $null }
     if ($justScript -and (Test-Path $justScript)) {
-        Write-Host "[INSTALL] Installing just via scripts\install-just.ps1..." -ForegroundColor Yellow
+        Write-Host "[INSTALL] Installing just via install-just.ps1..." -ForegroundColor Yellow
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $justScript
     } else {
         Write-Host "[INSTALL] Installing just..." -ForegroundColor Yellow
@@ -317,7 +317,7 @@ if (Test-Command "just") {
         $justVer = & just --version 2>&1 | Select-Object -First 1
         Write-Host "[OK] just installed: $justVer" -ForegroundColor Green
     } else {
-        Write-Host "[FAIL] just installed but not found on PATH -- open a new terminal and re-run, or see scripts\install-just.ps1" -ForegroundColor Red
+        Write-Host "[FAIL] just installed but not found on PATH -- open a new terminal and re-run, or see install-just.ps1" -ForegroundColor Red
         exit 1
     }
 }

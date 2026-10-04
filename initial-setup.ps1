@@ -274,23 +274,50 @@ if ($pyPath) {
 }
 
 # ---------- 7. just (task runner) ----------
+# Same steps as scripts/install-just.ps1 (winget Casey.Just, then the WinGet Links PATH
+# gap, then uv as a last resort). When the script is on disk, run it (as a child process:
+# it calls `exit`); when this file came from `irm | iex` there is no repo, so do the steps inline.
 Refresh-Path
 if (Test-Command "just") {
     $justVer = & just --version 2>&1 | Select-Object -First 1
     Write-Host "[OK] just already installed: $justVer" -ForegroundColor Green
 } else {
-    Write-Host "[INSTALL] Installing just..." -ForegroundColor Yellow
-    $savedEAP = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    $justLog = & uv tool install rust-just 2>&1
-    $ErrorActionPreference = $savedEAP
+    $justScript = if ($PSScriptRoot) { Join-Path $PSScriptRoot "scripts\install-just.ps1" } else { $null }
+    if ($justScript -and (Test-Path $justScript)) {
+        Write-Host "[INSTALL] Installing just via scripts\install-just.ps1..." -ForegroundColor Yellow
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $justScript
+    } else {
+        Write-Host "[INSTALL] Installing just..." -ForegroundColor Yellow
+        $savedEAP = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        if ($script:hasWinget) {
+            & winget install --id Casey.Just -e --accept-source-agreements --accept-package-agreements 2>&1 | Out-Null
+            Refresh-Path
+        }
+        if (-not (Test-Command "just")) {
+            # winget leaves just.exe in a versioned Packages folder that is not on PATH:
+            # copy it into WinGet\Links and put that folder on the User PATH.
+            $pkgDir   = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages"
+            $linksDir = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links"
+            $exe = if (Test-Path $pkgDir) { Get-ChildItem -Path $pkgDir -Recurse -Filter "just.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 }
+            if ($exe) {
+                if (-not (Test-Path $linksDir)) { New-Item -ItemType Directory -Path $linksDir -Force | Out-Null }
+                Copy-Item $exe.FullName (Join-Path $linksDir "just.exe") -Force
+                Add-UserPath $linksDir
+            }
+        }
+        if (-not (Test-Command "just") -and (Test-Command "uv")) {
+            & uv tool install rust-just 2>&1 | Out-Null
+            Refresh-Path
+        }
+        $ErrorActionPreference = $savedEAP
+    }
     Refresh-Path
     if (Test-Command "just") {
         $justVer = & just --version 2>&1 | Select-Object -First 1
         Write-Host "[OK] just installed: $justVer" -ForegroundColor Green
     } else {
-        Write-Host "[FAIL] just installed but not found on PATH -- uv said:" -ForegroundColor Red
-        foreach ($line in $justLog) { Write-Host "       $line" -ForegroundColor DarkGray }
+        Write-Host "[FAIL] just installed but not found on PATH -- open a new terminal and re-run, or see scripts\install-just.ps1" -ForegroundColor Red
         exit 1
     }
 }

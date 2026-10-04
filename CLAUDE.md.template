@@ -34,7 +34,9 @@
 
 ## Local Development
 
-- One-time machine setup: `pwsh ./setup.ps1` (idempotent — installs Git, @@TOOLCHAIN_SUMMARY@@,
+- No `just` on the machine yet: `powershell -ExecutionPolicy Bypass -File scripts/install-just.ps1`
+  (winget, with the WinGet `Links` PATH fix), then open a new terminal. `just install` runs `setup.ps1`.
+- One-time machine setup: `just install` or `pwsh ./setup.ps1` (idempotent — installs Git, @@TOOLCHAIN_SUMMARY@@,
   just, the Claude Code CLI). Then @@BOOTSTRAP_LINE@@ `just start`.
 - All day-2 commands are `just` recipes — run `just` to list them. Never invent an alternative
   command for something a recipe already covers.

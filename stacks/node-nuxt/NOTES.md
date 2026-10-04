@@ -18,7 +18,7 @@
   watch mode in a TTY and hangs the recipe. Split `test-unit`/`test-functional` recipes
   only if those npm scripts exist.
 - **Recipe pruning:** keep only the recipes whose npm script exists in `package.json`.
-- **Boot-verify:** `just install` + `just build` exit 0, then `just start`, then GET
+- **Boot-verify:** `just deps` + `just build` exit 0, then `just start`, then GET
   `http://localhost:@@PORT@@/` returns 200 with app HTML. Stop with `just stop`.
 
 ## Related docs

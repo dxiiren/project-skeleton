@@ -8,6 +8,10 @@ port := env_var_or_default('PORT', '@@PORT@@')
 default:
     @just --list
 
+# First-time machine setup: installs the toolchain this repo needs (runs setup.ps1). Safe to re-run.
+install:
+    @powershell.exe -NoProfile -ExecutionPolicy Bypass -File '{{justfile_directory()}}/setup.ps1'
+
 # ─── Guards ───────────────────────────────────────────────
 
 # uv — installed by setup.ps1; provides the Python that serves the site.

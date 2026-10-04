@@ -6,6 +6,10 @@ set shell := ["powershell.exe", "-NoProfile", "-Command"]
 default:
     @just --list
 
+# First-time machine setup: installs the toolchain this repo needs (runs setup.ps1). Safe to re-run.
+install:
+    @powershell.exe -NoProfile -ExecutionPolicy Bypass -File '{{justfile_directory()}}/setup.ps1'
+
 # ─── Guards ───────────────────────────────────────────────
 
 # JDK — installed by setup.ps1; needed by build/run.

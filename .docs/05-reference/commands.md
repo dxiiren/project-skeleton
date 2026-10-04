@@ -6,7 +6,7 @@
 ## Recipes
 
 Every stack ships `install`, which runs `setup.ps1` (the toolchain). `just` itself comes from
-`scripts/install-just.ps1` (`-DryRun` previews, `-Force` reinstalls). On the node stacks the npm
+`install-just.ps1` (`-DryRun` previews, `-Force` reinstalls). On the node stacks the npm
 dependency install is `deps`.
 
 | Recipe | What it does | When |

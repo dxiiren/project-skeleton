@@ -527,7 +527,7 @@ Describe 'initial-setup.ps1 — the machine bootstrap itself' {
 }
 
 # ===================================================================================
-# scripts/install-just.ps1 -- the "I have no `just` yet" bootstrap, and the `install`
+# install-just.ps1 -- the "I have no `just` yet" bootstrap, and the `install`
 # recipe every stack justfile carries. The script is CANONICAL here: iuc, aurum and
 # akmal-resume-website copy it byte-for-byte, so it must stay generic.
 # ===================================================================================
@@ -543,10 +543,10 @@ $installStacks = @(
     @{ Stack = 'vbnet';       Arguments = @('-Name', 'test-i-vb', '-Stack', 'vbnet', '-MainClass', 'Lab Runner', '-Src', 'Lab Runner.sln') }
 )
 
-Describe 'scripts/install-just.ps1 — the just bootstrap' {
+Describe 'install-just.ps1 — the just bootstrap' {
 
     BeforeAll {
-        $script:ijPath = Join-Path $script:RepoRoot 'scripts\install-just.ps1'
+        $script:ijPath = Join-Path $script:RepoRoot 'install-just.ps1'
         $script:ijText = if (Test-Path $script:ijPath) { [System.IO.File]::ReadAllText($script:ijPath) } else { '' }
         $script:psExe  = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     }
@@ -632,7 +632,7 @@ Describe 'stack justfiles — the install recipe' {
     }
 }
 
-Describe 'init.ps1 — <Stack> keeps scripts/install-just.ps1 and lists install' -ForEach $installStacks {
+Describe 'init.ps1 — <Stack> keeps install-just.ps1 and lists install' -ForEach $installStacks {
 
     BeforeAll {
         $copy   = New-SkeletonCopy
@@ -648,10 +648,10 @@ Describe 'init.ps1 — <Stack> keeps scripts/install-just.ps1 and lists install'
         $result.ExitCode | Should -Be 0
     }
 
-    It 'keeps scripts/install-just.ps1, identical to the canonical copy' {
-        $kept = Join-Path $copy 'scripts\install-just.ps1'
+    It 'keeps install-just.ps1, identical to the canonical copy' {
+        $kept = Join-Path $copy 'install-just.ps1'
         $kept | Should -Exist
-        (Get-FileHash $kept).Hash | Should -Be (Get-FileHash (Join-Path $script:RepoRoot 'scripts\install-just.ps1')).Hash
+        (Get-FileHash $kept).Hash | Should -Be (Get-FileHash (Join-Path $script:RepoRoot 'install-just.ps1')).Hash
     }
 
     It 'just --list shows install' -Skip:(-not (Get-Command just -ErrorAction SilentlyContinue)) {

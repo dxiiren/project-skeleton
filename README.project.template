@@ -27,7 +27,7 @@
 
 ## Quick start
 
-No `just` yet? Run `powershell -ExecutionPolicy Bypass -File scripts/install-just.ps1`, open a new
+No `just` yet? Run `powershell -ExecutionPolicy Bypass -File install-just.ps1`, open a new
 terminal, then `just install` (it runs `setup.ps1`).
 
 ```powershell

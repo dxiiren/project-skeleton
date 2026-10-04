@@ -235,7 +235,7 @@ Write-Host ""
 
 # ---------- Next steps (manual) ----------
 Write-Host "Next steps:" -ForegroundColor Cyan
-Write-Host "  1. Install dependencies:            just install" -ForegroundColor Gray
+Write-Host "  1. Install dependencies:            just deps" -ForegroundColor Gray
 Write-Host "  2. Start the dev server (:@@PORT@@):  just start   (foreground: just dev)" -ForegroundColor Gray
 Write-Host "  3. Production build check:          just build" -ForegroundColor Gray
 Write-Host "  4. Login to Claude Code:            claude" -ForegroundColor Gray

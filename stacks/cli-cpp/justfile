@@ -11,6 +11,10 @@ gpp := env_var('LOCALAPPDATA') + '\Programs\w64devkit\bin\g++.exe'
 default:
     @just --list
 
+# First-time machine setup: installs the toolchain this repo needs (runs setup.ps1). Safe to re-run.
+install:
+    @powershell.exe -NoProfile -ExecutionPolicy Bypass -File '{{justfile_directory()}}/setup.ps1'
+
 # ─── Guards ───────────────────────────────────────────────
 
 # g++ — installed by setup.ps1 (w64devkit) to a pinned path; needed by build/run.

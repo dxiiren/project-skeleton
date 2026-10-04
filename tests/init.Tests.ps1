@@ -619,3 +619,121 @@ Describe 'tools/claude-local/install.ps1 — the opt-in local-model launcher' {
         $LASTEXITCODE | Should -Be 0 -Because "5.1 parse errors: $out"
     }
 }
+
+Describe 'tools/claude-local/install.ps1 — non-ASCII config.json under Windows PowerShell 5.1' {
+
+    BeforeAll {
+        # initial-setup.ps1 runs the installer under powershell.exe 5.1, whose Get-Content
+        # reads a BOM-less file in the ANSI code page. config.json is written as UTF-8
+        # without a BOM, so a non-ASCII label must survive a 5.1 re-run byte for byte.
+        $copy      = New-SkeletonCopy
+        $installer = Join-Path $copy 'tools\claude-local\install.ps1'
+        $claudeDir = Join-Path $copy '_home\.claude\local-llm'
+        New-Item -ItemType Directory -Force -Path $claudeDir | Out-Null
+        # Built from code points so this file's own encoding cannot hide the bug:
+        # "Modèle café — 日本語 ü"
+        $script:label = 'Mod' + [char]0x00E8 + 'le caf' + [char]0x00E9 + ' ' + [char]0x2014 + ' ' +
+                        [char]0x65E5 + [char]0x672C + [char]0x8A9E + ' ' + [char]0x00FC
+        $seed = [ordered]@{ default = 'main'; endpoints = [ordered]@{
+                    main = [ordered]@{ upstream = 'http://127.0.0.1:9'; model = 'm'; label = $script:label; context = 0 } } }
+        $script:cfgPath = Join-Path $claudeDir 'config.json'
+        [System.IO.File]::WriteAllText($script:cfgPath, ($seed | ConvertTo-Json -Depth 5),
+            (New-Object System.Text.UTF8Encoding($false)))
+
+        $psExe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $args51 = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $installer,
+                    '-ClaudeDir', $claudeDir, '-BinDir', (Join-Path $copy '_home\.local\bin'),
+                    '-NoProfileEdit', '-SkipProbe')
+        $script:out51  = & $psExe @args51 2>&1 | Out-String
+        $script:code51 = $LASTEXITCODE
+        $script:bytes  = [System.IO.File]::ReadAllBytes($script:cfgPath)
+    }
+
+    It 'completes under powershell.exe 5.1' {
+        $script:code51 | Should -Be 0 -Because $script:out51
+    }
+
+    It 'keeps the non-ASCII label intact after the 5.1 re-run' {
+        $text = (New-Object System.Text.UTF8Encoding($false, $true)).GetString($script:bytes)
+        ($text | ConvertFrom-Json).endpoints.main.label | Should -BeExactly $script:label
+    }
+
+    It 'writes config.json without a BOM' {
+        $hasBom = $script:bytes.Length -ge 3 -and $script:bytes[0] -eq 0xEF -and
+                  $script:bytes[1] -eq 0xBB -and $script:bytes[2] -eq 0xBF
+        $hasBom | Should -BeFalse
+    }
+}
+
+Describe '.gitignore — .env secrets stay out of git, .env.example stays tracked' -ForEach @(
+    @{ File = '.gitignore' }
+    @{ File = 'gitignore-block.txt' }
+) {
+
+    BeforeAll {
+        # The root .gitignore guards the skeleton itself; gitignore-block.txt is what
+        # init.ps1 merges into every scaffolded project's .gitignore. Both must hold.
+        $repo = Join-Path $env:TEMP ("skeleton-gi-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path $repo | Out-Null
+        $script:TempRoots.Add($repo)
+        Copy-Item (Join-Path $script:RepoRoot $File) (Join-Path $repo '.gitignore')
+        & git -C $repo init -q 2>&1 | Out-Null
+        function Test-Ignored([string]$Path) {
+            & git -C $repo check-ignore -q -- $Path 2>&1 | Out-Null
+            return ($LASTEXITCODE -eq 0)
+        }
+    }
+
+    It '<File> ignores .env' {
+        Test-Ignored '.env' | Should -BeTrue
+    }
+
+    It '<File> ignores .env.* variants (.env.local, .env.production)' {
+        Test-Ignored '.env.local'      | Should -BeTrue
+        Test-Ignored '.env.production' | Should -BeTrue
+    }
+
+    It '<File> keeps .env.example trackable' {
+        Test-Ignored '.env.example' | Should -BeFalse
+    }
+}
+
+Describe 'init.ps1 — -Port must be 1-65535' {
+
+    BeforeAll {
+        # Invoke-InitNoInput: today -Port 0 falls through to the port prompt, and an empty
+        # answer must not hang the suite. A rejected port must stop init before step 1.
+        $tooHighCopy = New-SkeletonCopy
+        $tooHigh     = Invoke-InitNoInput -Root $tooHighCopy -Arguments @(
+            '-Name', 'test-porthigh', '-Stack', 'static', '-Port', '65536', '-Docroot', '.')
+
+        $zeroCopy = New-SkeletonCopy
+        $zero     = Invoke-InitNoInput -Root $zeroCopy -Arguments @(
+            '-Name', 'test-portzero', '-Stack', 'static', '-Port', '0', '-Docroot', '.')
+
+        $maxCopy = New-SkeletonCopy
+        $max     = Invoke-Init -Root $maxCopy -Arguments @(
+            '-Name', 'test-portmax', '-Stack', 'static', '-Port', '65535', '-Docroot', '.')
+        $maxJustfile = if (Test-Path (Join-Path $maxCopy 'justfile')) {
+            [System.IO.File]::ReadAllText((Join-Path $maxCopy 'justfile')) } else { '' }
+    }
+
+    It 'rejects -Port 65536 with a non-zero exit and a Port validation error' {
+        $tooHigh.ExitCode | Should -Not -Be 0
+        $tooHigh.Output   | Should -Match "Cannot validate argument on parameter 'Port'"
+        Join-Path $tooHighCopy 'setup.ps1' | Should -Not -Exist
+        Join-Path $tooHighCopy 'init.ps1'  | Should -Exist
+    }
+
+    It 'rejects -Port 0 with a non-zero exit and a Port validation error' {
+        $zero.ExitCode | Should -Not -Be 0
+        $zero.Output   | Should -Match "Cannot validate argument on parameter 'Port'"
+        Join-Path $zeroCopy 'setup.ps1' | Should -Not -Exist
+        Join-Path $zeroCopy 'init.ps1'  | Should -Exist
+    }
+
+    It 'accepts the top of the range, -Port 65535, and fills it' {
+        $max.ExitCode | Should -Be 0 -Because $max.Output
+        $maxJustfile  | Should -Match "env_var_or_default\('PORT', '65535'\)"
+    }
+}

@@ -18,7 +18,7 @@ script skeleton) and `scan.ps1` live in the `powershell-windows` agent
 the scan yourself:
 
 ```
-Agent(subagent_type: "powershell-windows", model: "opus",
+Agent(subagent_type: "powershell-windows", model: "sonnet",
       description: "PowerShell work (write / review / scan)",
       prompt: "<the developer's request verbatim, the files or recipe involved, any error text; say SCAN ONLY when they asked to check without changing anything>")
 ```
@@ -37,7 +37,7 @@ A request to review, check, audit or explain a script (anything short of "write"
 to `powershell-review`, which has no shell at all:
 
 ```
-Agent(subagent_type: "powershell-review", model: "opus", description: "Review <file>",
+Agent(subagent_type: "powershell-review", model: "sonnet", description: "Review <file>",
       prompt: "<the request verbatim + the file paths>")
 ```
 

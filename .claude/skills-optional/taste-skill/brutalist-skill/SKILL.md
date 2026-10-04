@@ -13,7 +13,7 @@ procedure lives in the `industrial-brutalist-ui` agent (`.claude/agents/industri
 run it yourself:
 
 ```
-Agent(subagent_type: "industrial-brutalist-ui", model: "opus",
+Agent(subagent_type: "industrial-brutalist-ui", model: "sonnet",
       description: "industrial-brutalist-ui task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

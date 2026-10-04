@@ -2,7 +2,7 @@
 name: fix-phpstan
 description: Use when PHPStan / Larastan (or its pre-commit hook) fails with static-analysis errors, or when the developer says 'fix phpstan', 'fix larastan', 'phpstan failing', or 'fix static analysis' — reads the reported errors, fixes the root cause in the source, and re-runs until clean, pasting the clean result before claiming done. Runs as a subagent; the fix-phpstan skill hands the work here.
 tools: Read, Grep, Glob, Bash, PowerShell, Edit
-model: opus
+model: sonnet
 ---
 
 # fix-phpstan — Resolve PHPStan / Larastan errors

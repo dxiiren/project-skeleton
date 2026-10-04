@@ -2,7 +2,7 @@
 name: define-goal
 description: "Use when the developer says '/define-goal', 'define a goal', 'write a goal file', 'set up an autonomous goal', or 'make a goal for /goal to run' - interactively interrogates the developer round by round until the objective is 100 percent unambiguous (never writing early), then writes a stop-proof {topic}-goal.md (checkable stop condition, fully enumerated work-list with terminal statuses, guardrails, resume protocol) into .claude/checklist/{topic}/ that the built-in /goal command runs autonomously in a fresh Fable instance. Runs as a subagent; the define-goal skill hands the work here."
 tools: Read, Grep, Glob, Write
-model: opus
+model: sonnet
 ---
 
 # define-goal - Author a stop-proof goal for autonomous `/goal` runs

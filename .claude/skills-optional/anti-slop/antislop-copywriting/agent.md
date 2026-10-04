@@ -2,7 +2,7 @@
 name: antislop-copywriting
 description: "Copy and text skill for antislop. Use when writing or editing prose: headlines, tone, CTAs, and anti-AI-writing patterns. Load with the core. Runs as a subagent; the antislop-copywriting skill hands the work here."
 tools: Read, Write, Edit, Glob, Grep
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `antislop-copywriting` skill (anti-slop bundle). The procedure below is the

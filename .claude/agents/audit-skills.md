@@ -2,7 +2,7 @@
 name: audit-skills
 description: Use when the developer says 'audit skills' or '/audit-skills' — verifies every skill in .claude/skills/ has a valid SKILL.md and is registered in README.md, that CLAUDE.md references only existing skills, and that no skill hardcodes a secret; reports missing/orphaned entries and offers auto-fix. Runs as a subagent; the audit-skills skill hands the work here.
 tools: Read, Grep, Glob, Bash, Edit, Write
-model: opus
+model: sonnet
 ---
 
 **Modes.** `MODE: AUDIT` (default): run the script, report every section, change nothing. `MODE: FIX` + an `APPROVED:` list: apply exactly those fixes, re-run the script, report.
@@ -45,7 +45,7 @@ Each check owns one failure mode. Any non-empty section fails the gate (exit 1).
 | `MISSING`       | A skill present on disk but not linked in `README.md`.                                                                                        |
 | `ORPHANED`      | A `README.md` link (or a CLAUDE.md backticked name that README also links) whose skill folder does not exist.                                 |
 | `CRED_EXPOSURE` | A skill file hardcodes a secret (password / token / API key / connection string) instead of referencing a KEY or env var.                     |
-| `NO_AGENT`      | A skill with no agent: `.claude/skills/<name>/` needs `.claude/agents/<name>.md` (`model: opus`); `.claude/skills-optional/<name>/` needs `agent.md` beside its `SKILL.md`. `verify-before-claim` maps to `verifier`; runtime-locked skills (loaded byte-for-byte by a production app) are exempt. |
+| `NO_AGENT`      | A skill with no agent: `.claude/skills/<name>/` needs `.claude/agents/<name>.md` (`model: sonnet`); `.claude/skills-optional/<name>/` needs `agent.md` beside its `SKILL.md`. `verify-before-claim` maps to `verifier`; runtime-locked skills (loaded byte-for-byte by a production app) are exempt. |
 
 The script prints each section then a `PASS` / `FAIL` summary line and exits
 non-zero on any failure.
@@ -77,7 +77,7 @@ In MODE: AUDIT you only run the script and report. In MODE: FIX you apply ONLY t
   table row in the correct `README.md` category section.
 - **ORPHANED** — do NOT auto-remove; ask whether to delete the stale entry or
   recreate the skill.
-- **NO_AGENT** — create the agent: frontmatter `name`, `description` (the skill's triggers + "Runs as a subagent; the <name> skill hands the work here."), least-privilege `tools`, `model: opus`; move the procedure out of `SKILL.md` and leave a shim whose first action is the `Agent` call. Never touch a runtime-locked skill.
+- **NO_AGENT** — create the agent: frontmatter `name`, `description` (the skill's triggers + "Runs as a subagent; the <name> skill hands the work here."), least-privilege `tools`, `model: sonnet`; move the procedure out of `SKILL.md` and leave a shim whose first action is the `Agent` call. Never touch a runtime-locked skill.
 - **CRED_EXPOSURE** — replace the hardcoded value: in a script read it from
   `os.environ`; in a doc reference the KEY name (e.g. `` `<GITHUB_PAT>` ``) or an
   env var — never the literal. The real value lives only in git-ignored config

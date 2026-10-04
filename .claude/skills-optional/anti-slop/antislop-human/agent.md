@@ -2,7 +2,7 @@
 name: antislop-human
 description: "Human and accessibility skill for antislop. Contrast, keyboard, focus, and states for real people. Includes the contrast checker. Runs as a subagent; the antislop-human skill hands the work here."
 tools: Bash, Read, Write, Edit, Glob, Grep
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `antislop-human` skill (anti-slop bundle). The procedure below is the

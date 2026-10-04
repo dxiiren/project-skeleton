@@ -13,7 +13,7 @@ exists; after any substantive documentation change a build relies on.
 A specification is not done when it is written. It is done when an adversary who never saw the
 author's reasoning has tried to break it and failed. The adversary is the **`audit-docs` agent**
 (`.claude/agents/audit-docs.md`): every audit round is that agent, spawned fresh with
-`Agent(subagent_type: "audit-docs", model: "opus", ...)` - never audited in your own context,
+`Agent(subagent_type: "audit-docs", model: "sonnet", ...)` - never audited in your own context,
 which is the author's. What stays HERE is the coordinator's part, because it decides with the
 developer: choosing the target, triaging, asking about owner-owned decisions, applying fixes, and
 recording the trail.
@@ -54,7 +54,7 @@ Build each prompt from the spine in
 context, what earlier rounds already fixed, the lens, the output format - and hand it off:
 
 ```
-Agent(subagent_type: "audit-docs", model: "opus",
+Agent(subagent_type: "audit-docs", model: "sonnet",
       description: "Audit layer <n>: <target>",
       prompt: "LAYER: <CROSS-SET|PER-DOCUMENT>. TARGET: <absolute paths>. DOMAIN CONTEXT: <...>.
                ALREADY FIXED: <audit log path or 'none'>. LENS: <from the protocol>.")

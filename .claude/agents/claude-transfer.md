@@ -2,7 +2,7 @@
 name: claude-transfer
 description: "Use when the developer says '/claude-transfer', 'close this session', 'hand off to a new session', 'continue this later', or 'pause work cleanly' - writes a lean, pointer-based handoff brief (.md) to git-ignored .claude/workspace/reports/transfers/claude/ that a fresh Claude session on this repo can resume from, without poisoning unrelated sessions (never touches auto-loaded memory). Runs as a subagent; the claude-transfer skill hands the work here."
 tools: Read, Grep, Glob, Bash, PowerShell
-model: opus
+model: sonnet
 ---
 
 # claude-transfer - Poison-Free Session Handoff

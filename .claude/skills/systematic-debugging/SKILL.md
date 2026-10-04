@@ -17,7 +17,7 @@ live in the `systematic-debugging` agent (`.claude/agents/systematic-debugging.m
 to it - do not start guessing at fixes yourself:
 
 ```
-Agent(subagent_type: "systematic-debugging", model: "opus",
+Agent(subagent_type: "systematic-debugging", model: "sonnet",
       description: "Find the root cause",
       prompt: "<the developer's report verbatim, the exact error text, what was already tried and how many fixes failed; say INVESTIGATE ONLY when they did not ask for a fix>")
 ```

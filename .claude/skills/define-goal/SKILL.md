@@ -84,7 +84,7 @@ answer, drill in where an answer is vague. The per-type probes and the answer->s
 Once every theme has an answer, send them all - verbatim, no paraphrase - to the agent:
 
 ```
-Agent(subagent_type: "define-goal", model: "opus",
+Agent(subagent_type: "define-goal", model: "sonnet",
       description: "Draft the goal spec",
       prompt: "MODE: DRAFT. Topic: <kebab-slug>. Path: .claude/checklist/<topic>/<topic>-goal.md.
                Kickoff: <type, attended/unattended, which instance>. Answers: <theme 1..8, verbatim>.")
@@ -111,7 +111,7 @@ whole draft. Never write or have it write before the explicit confirmation.
 2. After the explicit confirmation, hand the write to the agent:
 
    ```
-   Agent(subagent_type: "define-goal", model: "opus",
+   Agent(subagent_type: "define-goal", model: "sonnet",
          description: "Write the confirmed goal file",
          prompt: "MODE: WRITE. CONFIRMED by the developer. Path: <path>. Spec: <the confirmed spec, verbatim>.")
    ```

@@ -2,7 +2,7 @@
 name: llm-transfer
 description: "Use when the developer says '/llm-transfer', 'transfer to ChatGPT/Ollama/Gemini', 'hand this to another LLM', 'make a master prompt for an external LLM', or 'export context for an external LLM' - enters plan mode, gathers context, and assembles a self-contained master prompt for a cold, tool-less model; prints a copy-paste block and saves a .md to git-ignored .claude/workspace/reports/transfers/{tool}/. Runs as a subagent; the llm-transfer skill hands the work here."
 tools: Read, Grep, Glob, Bash, Write
-model: opus
+model: sonnet
 ---
 
 # llm-transfer - Master Prompt Handoff to an External LLM

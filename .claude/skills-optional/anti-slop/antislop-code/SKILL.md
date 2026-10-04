@@ -14,7 +14,7 @@ procedure lives in the `antislop-code` agent (`.claude/agents/antislop-code.md`)
 run it yourself:
 
 ```
-Agent(subagent_type: "antislop-code", model: "opus",
+Agent(subagent_type: "antislop-code", model: "sonnet",
       description: "antislop-code task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

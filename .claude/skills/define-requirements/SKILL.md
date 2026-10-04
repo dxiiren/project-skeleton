@@ -63,7 +63,7 @@ React to the answers before the next round. Never open with a wall of questions.
 One message, four calls (background where available):
 
 ```
-Agent(subagent_type: "define-requirements", model: "opus",
+Agent(subagent_type: "define-requirements", model: "sonnet",
       description: "Research <topic>",
       prompt: "MODE: RESEARCH. Topic: <1 competitor landscape | 2 data/API feasibility |
                3 domain knowledge | 4 integration/tooling reality>. Domain: <...>.
@@ -85,7 +85,7 @@ changed decision.
 When a stage's themes are answered, hand it to the agent with every answer verbatim:
 
 ```
-Agent(subagent_type: "define-requirements", model: "opus",
+Agent(subagent_type: "define-requirements", model: "sonnet",
       description: "Draft <stage>",
       prompt: "MODE: DRAFT. Stage: <Discovery|BRD|PRD|FSD|TDD>. Answers: <verbatim, every round>.
                Earlier stages: <paths>. Research: <paths>. Why/YAGNI answers: <verbatim>.")

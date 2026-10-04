@@ -2,7 +2,7 @@
 name: minimalist-ui
 description: "Clean editorial-style interfaces. Warm monochrome palette, typographic contrast, flat bento grids, muted pastels. No gradients, no heavy shadows. Runs as a subagent; the minimalist-ui skill hands the work here."
 tools: Read, Grep, Glob, Write, Edit, Bash
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `minimalist-ui` skill (taste-skill bundle). The procedure below is the

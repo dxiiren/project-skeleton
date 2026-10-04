@@ -2,7 +2,7 @@
 name: antislop-code
 description: "Code comment hygiene for AI coding agents: remove generic AI-slop comments, keep the valuable ones, never touch the code. Runs as a subagent; the antislop-code skill hands the work here."
 tools: Read, Write, Edit, Glob, Grep
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `antislop-code` skill (anti-slop bundle). The procedure below is the

@@ -11,7 +11,7 @@ Triggers: "audit skills", "/audit-skills", "check skills", "skills audit".
 Your first action is the `Agent` call below - do not run the script yourself. The procedure lives in the `audit-skills` agent (`.claude/agents/audit-skills.md`):
 
 ```
-Agent(subagent_type: "audit-skills", model: "opus",
+Agent(subagent_type: "audit-skills", model: "sonnet",
       description: "Audit the skills",
       prompt: "MODE: AUDIT. <the developer's request verbatim>")
 ```
@@ -26,9 +26,9 @@ The audit proves a skill is registered, not that it changes behaviour. Run this 
 session - the `audit-skills` agent cannot spawn subagents:
 
 1. Write one realistic task the skill exists for (with the pressure that tempts a shortcut).
-2. `Agent(subagent_type: "general-purpose", model: "opus", prompt: "<task>. Do NOT load or read the
+2. `Agent(subagent_type: "general-purpose", model: "sonnet", prompt: "<task>. Do NOT load or read the
    <skill> skill.")` - the baseline. Note what it gets wrong.
-3. `Agent(subagent_type: "<skill's agent>", model: "opus", prompt: "<the same task>")` - the treated run.
+3. `Agent(subagent_type: "<skill's agent>", model: "sonnet", prompt: "<the same task>")` - the treated run.
 4. Keep the skill only if run 3 fixes what run 2 got wrong; otherwise sharpen its rules and repeat.
    Report both runs' key lines side by side.
 

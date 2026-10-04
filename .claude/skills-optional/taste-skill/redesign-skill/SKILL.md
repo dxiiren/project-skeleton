@@ -13,7 +13,7 @@ procedure lives in the `redesign-existing-projects` agent (`.claude/agents/redes
 run it yourself:
 
 ```
-Agent(subagent_type: "redesign-existing-projects", model: "opus",
+Agent(subagent_type: "redesign-existing-projects", model: "sonnet",
       description: "redesign-existing-projects task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

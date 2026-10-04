@@ -2,7 +2,7 @@
 name: design-taste-frontend
 description: "Anti-slop frontend skill for landing pages, portfolios, and redesigns. The agent reads the brief, infers the right design direction, and ships interfaces that do not look templated. Real design systems when applicable, audit-first on redesigns, strict pre-flight check. Runs as a subagent; the design-taste-frontend skill hands the work here."
 tools: Read, Grep, Glob, Write, Edit, Bash
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `design-taste-frontend` skill (taste-skill bundle). The procedure below is the

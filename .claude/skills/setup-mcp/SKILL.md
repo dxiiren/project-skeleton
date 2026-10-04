@@ -20,7 +20,7 @@ Pick the mode: "verify only" / "check" / "is X set up" -> `CHECK`; an already-re
 answers `UNREGISTERED` without changing anything, and you continue with `RESEARCH-B`.
 
 ```
-Agent(subagent_type: "setup-mcp", model: "opus",
+Agent(subagent_type: "setup-mcp", model: "sonnet",
       description: "Setup MCP (<mode> <X>)",
       prompt: "MODE: <CHECK|APPLY-A|RESEARCH-B|WIRE-B> <X>. Developer said: <their words verbatim>.
                <WIRE-B only: the approved verdict + record, verbatim from the RESEARCH-B report>")

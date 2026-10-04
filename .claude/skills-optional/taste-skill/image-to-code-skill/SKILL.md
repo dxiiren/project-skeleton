@@ -13,7 +13,7 @@ procedure lives in the `image-to-code` agent (`.claude/agents/image-to-code.md`)
 run it yourself:
 
 ```
-Agent(subagent_type: "image-to-code", model: "opus",
+Agent(subagent_type: "image-to-code", model: "sonnet",
       description: "image-to-code task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

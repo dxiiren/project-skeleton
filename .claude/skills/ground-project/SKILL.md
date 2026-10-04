@@ -14,7 +14,7 @@ and agents, enable qualifying optional skills, audit to PASS, boot-verify) lives
 (`.claude/agents/ground-project.md`). Hand the work to it - do not run it yourself:
 
 ```
-Agent(subagent_type: "ground-project", model: "opus",
+Agent(subagent_type: "ground-project", model: "sonnet",
       description: "Ground the project",
       prompt: "<the developer's request verbatim; add PLAN ONLY if they asked for a dry run / no changes>")
 ```

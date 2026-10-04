@@ -14,7 +14,7 @@ procedure lives in the `pre-pr-review` agent (`.claude/agents/pre-pr-review.md`)
 run it yourself:
 
 ```
-Agent(subagent_type: "pre-pr-review", model: "opus",
+Agent(subagent_type: "pre-pr-review", model: "sonnet",
       description: "Pre-PR self-review",
       prompt: "<the developer's request verbatim> | Scope: <branch/base or 'report only' if the developer said so>")
 ```

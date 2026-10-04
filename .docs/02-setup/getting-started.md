@@ -12,7 +12,7 @@ PowerShell + winget (stock Windows 10/11). Everything else is installed by `setu
 If `just` is not installed yet, get it first (winget, with the PATH fix), then open a new terminal:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/install-just.ps1
+powershell -ExecutionPolicy Bypass -File install-just.ps1
 ```
 
 Then:

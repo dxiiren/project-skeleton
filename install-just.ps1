@@ -6,7 +6,7 @@
     Solves the chicken-and-egg problem of a fresh PC: every repo's one-command setup is
     `just install`, but you need `just` to run it. Run this script first:
 
-        powershell -ExecutionPolicy Bypass -File scripts/install-just.ps1
+        powershell -ExecutionPolicy Bypass -File install-just.ps1
 
     Flow (each step is skipped once `just` works):
       1. `just` already runs        -> print its version, exit 0.

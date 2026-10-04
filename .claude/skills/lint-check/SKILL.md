@@ -13,7 +13,7 @@ procedure lives in the `lint-check` agent (`.claude/agents/lint-check.md`). Hand
 run it yourself:
 
 ```
-Agent(subagent_type: "lint-check", model: "opus",
+Agent(subagent_type: "lint-check", model: "sonnet",
       description: "Run the quality suite",
       prompt: "<the developer's request verbatim, plus any scope they named>")
 ```

@@ -13,7 +13,7 @@ procedure lives in the `high-end-visual-design` agent (`.claude/agents/high-end-
 run it yourself:
 
 ```
-Agent(subagent_type: "high-end-visual-design", model: "opus",
+Agent(subagent_type: "high-end-visual-design", model: "sonnet",
       description: "high-end-visual-design task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

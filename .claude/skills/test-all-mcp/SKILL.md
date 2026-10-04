@@ -19,7 +19,7 @@ own.** The roster, the live smoke calls and the verdicts live in the `test-all-m
 2026-10-03), so hand it the whole job - do not run the checks yourself:
 
 ```
-Agent(subagent_type: "test-all-mcp", model: "opus",
+Agent(subagent_type: "test-all-mcp", model: "sonnet",
       description: "MCP health check",
       prompt: "<the developer's request verbatim; name the one server if they named one>")
 ```

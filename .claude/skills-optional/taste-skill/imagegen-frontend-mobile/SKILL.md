@@ -13,7 +13,7 @@ procedure lives in the `imagegen-frontend-mobile` agent (`.claude/agents/imagege
 run it yourself:
 
 ```
-Agent(subagent_type: "imagegen-frontend-mobile", model: "opus",
+Agent(subagent_type: "imagegen-frontend-mobile", model: "sonnet",
       description: "imagegen-frontend-mobile task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

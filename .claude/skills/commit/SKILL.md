@@ -24,7 +24,7 @@ subagent cannot ask the developer.
 ## 2 - Hand off
 
 ```
-Agent(subagent_type: "commit", model: "opus",
+Agent(subagent_type: "commit", model: "sonnet",
       description: "Commit (ALL or PREPARE)",
       prompt: "MODE: <ALL|PREPARE>. Developer said: <their words verbatim>. Scope: <paths or area they named, if any>.")
 ```
@@ -38,7 +38,7 @@ guess) and put it in the message you show. On "no", stop and say the files are s
 On approval:
 
 ```
-Agent(subagent_type: "commit", model: "opus",
+Agent(subagent_type: "commit", model: "sonnet",
       description: "Commit the approved staged files",
       prompt: "MODE: COMMIT. Approved message:\n<message verbatim>\nApproved files:\n<STAGED list>")
 ```

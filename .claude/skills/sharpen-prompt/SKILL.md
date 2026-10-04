@@ -14,7 +14,7 @@ rewrite lives in the `sharpen-prompt` agent (`.claude/agents/sharpen-prompt.md`)
 `SHARPENED` block yourself, even a quick one, is a failure of this skill - hand it off:
 
 ```
-Agent(subagent_type: "sharpen-prompt", model: "opus",
+Agent(subagent_type: "sharpen-prompt", model: "sonnet",
       description: "Sharpen the request",
       prompt: "<the developer's request verbatim> | Session context: <anything from this
                conversation the repo cannot tell it - prior turns, what was already tried>")
@@ -56,7 +56,7 @@ sharpening those is the ceremony this skill is supposed to remove.
 
 ### The shapes
 
-**subagent, report-only** — dispatch (model `opus`) with: return only (a) the 3 most likely causes ranked,
+**subagent, report-only** — dispatch (model `sonnet`) with: return only (a) the 3 most likely causes ranked,
 (b) exact `file:line` evidence for each, (c) the cheapest experiment that discriminates
 between them. Edit nothing. Time-box ~15 tool calls. Independent probes go out as multiple
 Agent calls in one message, not one after another.

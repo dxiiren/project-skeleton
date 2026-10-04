@@ -15,7 +15,7 @@ checks and the severity tiers live in the read-only `supply-chain-audit` agent
 (`.claude/agents/supply-chain-audit.md`). Hand the work to it - do not run the audits yourself:
 
 ```
-Agent(subagent_type: "supply-chain-audit", model: "opus",
+Agent(subagent_type: "supply-chain-audit", model: "sonnet",
       description: "Supply-chain audit",
       prompt: "Scope: <npm|python|composer|maven|docker|actions|licenses|all - default all>. Developer said: <their words verbatim>.")
 ```

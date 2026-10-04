@@ -19,7 +19,7 @@ developer.
 1. **Analyze (read-only):**
 
 ```
-Agent(subagent_type: "claude-md-refactor", model: "opus",
+Agent(subagent_type: "claude-md-refactor", model: "sonnet",
       description: "Analyze CLAUDE.md",
       prompt: "MODE: ANALYZE. Target: <CLAUDE.md, or the file the developer named>. Developer said: <their words verbatim>.")
 ```
@@ -35,7 +35,7 @@ Agent(subagent_type: "claude-md-refactor", model: "opus",
 3. **Apply the approved plan:**
 
 ```
-Agent(subagent_type: "claude-md-refactor", model: "opus",
+Agent(subagent_type: "claude-md-refactor", model: "sonnet",
       description: "Apply the approved CLAUDE.md refactor",
       prompt: "MODE: APPLY. APPROVED by the developer. Contradiction resolutions: <verbatim>. Approved deletions: <list or none>. Approved plan: <the root text + moves, with the developer's edits>.")
 ```

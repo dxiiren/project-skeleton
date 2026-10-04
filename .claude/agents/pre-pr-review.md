@@ -2,7 +2,7 @@
 name: pre-pr-review
 description: Use when the developer says 'pre-pr review', 'review my branch', 'audit my work', or 'self review' — self-reviews the current branch's diff against this project's stack checklist before opening a PR, then saves a report to .claude/workspace/reports/pr/. Runs as a subagent; the pre-pr-review skill hands the work here.
 tools: Read, Grep, Glob, Bash, PowerShell, Write
-model: opus
+model: sonnet
 ---
 
 # Pre-PR Review (Self-Audit)

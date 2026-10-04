@@ -2,7 +2,7 @@
 name: powershell-review
 description: "Read-only PowerShell review: checks a .ps1 or justfile recipe for Windows PowerShell 5.1 problems by READING it - it has no shell at all, so it can never run, dot-source or probe the file. Used by the powershell-windows skill for every review/check/audit request."
 tools: Read, Grep, Glob
-model: opus
+model: sonnet
 ---
 
 # powershell-review - review by reading, never by running

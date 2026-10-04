@@ -220,7 +220,7 @@ def scan_cred_exposure(root):
 
 # --- NO_AGENT ---------------------------------------------------------------
 # Convention (aitmpl-max-agents, 2026-10-03): every skill hands its procedure to an agent.
-#   .claude/skills/<name>/          -> .claude/agents/<name>.md  (model: opus)
+#   .claude/skills/<name>/          -> .claude/agents/<name>.md  (model: sonnet)
 #   .claude/skills-optional/<name>/ -> agent.md beside its SKILL.md (moved into
 #                                      .claude/agents/ when the skill is enabled)
 # A skill whose work an EXISTING agent of another name does maps to it instead of
@@ -246,8 +246,8 @@ def scan_no_agent(root, disk_names):
         path = os.path.join(root, AGENTS_DIR, agent + ".md")
         if not os.path.isfile(path):
             rows.append(name + "  -> create " + AGENTS_DIR + "/" + agent + ".md")
-        elif _agent_model(path) != "opus":
-            rows.append(name + "  -> " + AGENTS_DIR + "/" + agent + ".md must pin model: opus")
+        elif _agent_model(path) != "sonnet":
+            rows.append(name + "  -> " + AGENTS_DIR + "/" + agent + ".md must pin model: sonnet")
     base = os.path.join(root, OPTIONAL_DIR)
     for skill_md in sorted(glob.glob(os.path.join(base, "**", "SKILL.md"), recursive=True)):
         d = os.path.dirname(skill_md)
@@ -255,8 +255,8 @@ def scan_no_agent(root, disk_names):
         agent_md = os.path.join(d, "agent.md")
         if not os.path.isfile(agent_md):
             rows.append(rel + "  -> create " + rel + "/agent.md")
-        elif _agent_model(agent_md) != "opus":
-            rows.append(rel + "/agent.md must pin model: opus")
+        elif _agent_model(agent_md) != "sonnet":
+            rows.append(rel + "/agent.md must pin model: sonnet")
     return rows
 
 

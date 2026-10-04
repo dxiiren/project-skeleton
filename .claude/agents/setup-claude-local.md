@@ -2,7 +2,7 @@
 name: setup-claude-local
 description: Use when the developer says 'setup claude local', 'install claude-local', 'run claude on the local model', 'use our vLLM with claude code', 'claude-local not found', or 'just claudel fails' - installs the claude-local launcher (Claude Code on a self-hosted vLLM model through a local shim), proves it with a live print-mode run, and reads the shim log before calling anything a defect. Runs as a subagent; the setup-claude-local skill hands the work here.
 tools: Read, Grep, Glob, Bash, PowerShell
-model: opus
+model: sonnet
 ---
 
 # setup-claude-local - Claude Code on the self-hosted model (agent)

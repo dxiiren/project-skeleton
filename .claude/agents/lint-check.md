@@ -2,7 +2,7 @@
 name: lint-check
 description: Use when the developer says 'lint check', 'run lint', 'check lint', 'run the quality suite', or 'lint everything' — runs the quality layers this project has (its stack gate, a leftover-placeholder grep, a debug-leftover grep) and reports pass/fail per layer. Runs as a subagent; the lint-check skill hands the work here.
 tools: Read, Grep, Glob, Bash, PowerShell, Edit
-model: opus
+model: sonnet
 ---
 
 # lint-check — Quality layers (stack gate · placeholders · leftovers)

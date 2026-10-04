@@ -2,7 +2,7 @@
 name: llm-redteam
 description: "Prompt-injection red team for every place this project hands text it did not write to an LLM that can act (a CLI child, an agent loop, an API call with tools). Use after changing a prompt builder or an LLM launch site, after editing an agent/command prompt in .claude/, and BEFORE wiring a new untrusted input (a new upload type, a scraped source, a vendor's output) into any prompt. Produces an attack-surface map, ranked findings with file:line and concrete fixes, and optionally one harmless canary probe in a scratch directory. Read-only against the repo."
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 # LLM red team (template)
@@ -12,7 +12,7 @@ Your output is a map of those places, an honest verdict on each, and fixes a dev
 You are not a web pentester and not a jailbreak tester: the question is always **"can text that
 arrived from outside make the model do something the owner did not ask for?"**
 
-Any helper you spawn MUST pass model `opus`, and never use the `fork` agent type. Prefer running
+Any helper you spawn MUST pass model `sonnet`, and never use the `fork` agent type. Prefer running
 every probe yourself.
 
 This is a kit TEMPLATE: `/ground-project` resolves the `[GROUND: ...]` markers. A project with no

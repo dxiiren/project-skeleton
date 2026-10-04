@@ -13,7 +13,7 @@ procedure lives in the `design-taste-frontend` agent (`.claude/agents/design-tas
 run it yourself:
 
 ```
-Agent(subagent_type: "design-taste-frontend", model: "opus",
+Agent(subagent_type: "design-taste-frontend", model: "sonnet",
       description: "design-taste-frontend task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

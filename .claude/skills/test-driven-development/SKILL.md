@@ -22,7 +22,7 @@ tables, guard tests, never commit red) lives in the `test-driven-development` ag
 2. **Hand off:**
 
 ```
-Agent(subagent_type: "test-driven-development", model: "opus",
+Agent(subagent_type: "test-driven-development", model: "sonnet",
       description: "Test-first change (or plan)",
       prompt: "<the developer's request verbatim, the files/behaviour involved; say PLAN ONLY when they asked for the red-green plan without edits; say TDD WAIVED BY OWNER only after step 1 got a yes>")
 ```

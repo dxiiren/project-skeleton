@@ -13,7 +13,7 @@ your own. The procedure (capture every error, fix the root cause, re-run to 0 er
 (`.claude/agents/fix-typecheck.md`). Hand the work to it - do not run it yourself:
 
 ```
-Agent(subagent_type: "fix-typecheck", model: "opus",
+Agent(subagent_type: "fix-typecheck", model: "sonnet",
       description: "Fix typecheck errors",
       prompt: "<the developer's request verbatim, plus the failing output or file scope if they gave one; add REPORT ONLY if they asked for a check without edits>")
 ```

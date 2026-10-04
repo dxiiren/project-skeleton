@@ -16,7 +16,7 @@ that stops it (a DRY RUN included). The ONE step that stays here is the question
 is already open, because a subagent cannot ask the developer.
 
 ```
-Agent(subagent_type: "create-pr", model: "opus",
+Agent(subagent_type: "create-pr", model: "sonnet",
       description: "Push the branch and open a PR",
       prompt: "<the developer's request verbatim>. <add DRY RUN if they asked for one>")
 ```
@@ -25,7 +25,7 @@ If the agent returns `EXISTING PR: <url> ...`, show it and ask: **A)** push new 
 update, or **B)** stop. On A:
 
 ```
-Agent(subagent_type: "create-pr", model: "opus",
+Agent(subagent_type: "create-pr", model: "sonnet",
       description: "Push new commits to the open PR",
       prompt: "EXISTING PR: A. <the original request verbatim>")
 ```

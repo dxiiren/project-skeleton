@@ -14,7 +14,7 @@ each failing audit to source, the full road-to-100 playbook) lives in the `audit
 (`.claude/agents/audit-pagespeed.md`). Hand the work to it - do not run it yourself:
 
 ```
-Agent(subagent_type: "audit-pagespeed", model: "opus",
+Agent(subagent_type: "audit-pagespeed", model: "sonnet",
       description: "PageSpeed audit",
       prompt: "MODE: <AUDIT|PLAN>. Developer said: <their words verbatim>. URL: <if named>.")
 ```

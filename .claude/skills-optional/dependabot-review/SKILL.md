@@ -18,7 +18,7 @@ the agent cannot ask the developer.
 1. **Triage (always first):**
 
 ```
-Agent(subagent_type: "dependabot-review", model: "opus",
+Agent(subagent_type: "dependabot-review", model: "sonnet",
       description: "Triage Dependabot PRs",
       prompt: "MODE: TRIAGE. Developer said: <their words verbatim>.")
 ```
@@ -32,7 +32,7 @@ Agent(subagent_type: "dependabot-review", model: "opus",
 4. **Merge the approved set:**
 
 ```
-Agent(subagent_type: "dependabot-review", model: "opus",
+Agent(subagent_type: "dependabot-review", model: "sonnet",
       description: "Merge approved Dependabot PRs",
       prompt: "MODE: MERGE. APPROVED: #<n>, #<n>, ... Developer said: <their words verbatim>.")
 ```

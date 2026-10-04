@@ -15,7 +15,7 @@ patterns, run-and-paste) lives in the `generate-playwright-tests` agent
 work to it - do not write the test yourself:
 
 ```
-Agent(subagent_type: "generate-playwright-tests", model: "opus",
+Agent(subagent_type: "generate-playwright-tests", model: "sonnet",
       description: "Write a browser test",
       prompt: "<the developer's request verbatim: the page / flow to cover, and any behaviour they named>")
 ```

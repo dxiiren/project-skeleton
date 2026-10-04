@@ -13,7 +13,7 @@ procedure lives in the `gpt-taste` agent (`.claude/agents/gpt-taste.md`). Hand t
 run it yourself:
 
 ```
-Agent(subagent_type: "gpt-taste", model: "opus",
+Agent(subagent_type: "gpt-taste", model: "sonnet",
       description: "gpt-taste task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

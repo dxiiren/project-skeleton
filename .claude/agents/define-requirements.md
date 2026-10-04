@@ -2,7 +2,7 @@
 name: define-requirements
 description: "Use at the START of a new project or a major new capability - when the developer says '/define-requirements', 'new project', 'write the spec', 'do discovery', 'BRD/PRD/FSD/TDD', 'requirements pipeline', or describes something they want built when no spec exists yet. Interrogates round by round while background research agents work in parallel, then writes the five staged documents (Discovery -> BRD -> PRD -> FSD -> TDD) into .docs/00-requirements/ with dated research appendices, and hands off to /audit-docs before any code is written. Runs as a subagent; the define-requirements skill hands the work here."
 tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch, Bash
-model: opus
+model: sonnet
 ---
 
 # define-requirements - research and drafting half (agent)

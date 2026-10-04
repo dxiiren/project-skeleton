@@ -12,7 +12,7 @@ verifier gets the requirement and the changed-file list — nothing else — and
 it with live evidence or report PASS with the commands that prove it.
 
 The agent definition lives at `.claude/agents/verifier.md`. The verification itself is ALWAYS
-that agent, spawned with `Agent(subagent_type: "verifier", model: "opus", ...)` (step 3) - never
+that agent, spawned with `Agent(subagent_type: "verifier", model: "sonnet", ...)` (step 3) - never
 probed in your own context. What stays in this skill is the main-session part: deciding to
 verify, assembling the two inputs, and acting on the verdict.
 
@@ -65,11 +65,11 @@ and tell it to verify the system.
 Spawn `verifier` as a **subagent** — a fresh context, not a section of your own reasoning.
 Verifying inside your own context inherits your assumptions and defeats the whole point.
 
-Prompt shape - always this exact call, with `model: "opus"` set explicitly (a subagent started
+Prompt shape - always this exact call, with `model: "sonnet"` set explicitly (a subagent started
 without one inherits the main session's model):
 
 ```
-Agent(subagent_type: "verifier", model: "opus",
+Agent(subagent_type: "verifier", model: "sonnet",
       description: "Verify <requirement in 3-5 words>",
       prompt: "REQUIREMENT (verbatim from the developer):
                <the quoted requirement>
@@ -185,7 +185,7 @@ evidence; only the verifier votes.
 2. **A user-scope copy is a separate file, not a link.** Editing one silently leaves the other
    stale. Change the repo copy and re-copy it in the same turn.
 
-Its helpers run on `opus` too - `verifier.md` tells it to pass `model: "opus"` on every helper.
+Its helpers run on `sonnet` too - `verifier.md` tells it to pass `model: "sonnet"` on every helper.
 So hand it the requirement and the changed-file list and let it plan its own coverage. Do
 not pre-split the work, do not spawn your own helpers alongside it, and do not narrow its
 scope to the part you think is risky. A serial verification of a real change took about 12

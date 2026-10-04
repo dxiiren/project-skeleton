@@ -2,7 +2,7 @@
 name: setup-just
 description: "Use when the developer says 'setup just', 'install just', 'I can't run just', 'just not found', or 'just is not recognized' — installs the `just` command runner, fixes the Windows PATH gap that winget leaves behind, and verifies this repo's recipes actually list. Runs as a subagent; the setup-just skill hands the work here."
 tools: Read, Grep, Glob, Bash, PowerShell
-model: opus
+model: sonnet
 ---
 
 # setup-just — Command runner installation (agent)

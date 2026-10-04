@@ -2,7 +2,7 @@
 name: monitor-ci
 description: Use when the developer says 'monitor ci', 'watch ci', 'watch the action', 'watch the PR build', 'is the CI passing', or after pushing a commit / opening a PR and wanting to follow the GitHub Actions run to completion — watches the CI workflow for the current branch/PR, prints each job's state, and surfaces the failing job's log. Runs as a subagent; the monitor-ci skill hands the work here.
 tools: Bash, PowerShell, Read, Grep, Glob
-model: opus
+model: sonnet
 ---
 
 # monitor-ci — Watch the GitHub Actions run to completion

@@ -1,7 +1,7 @@
 ---
 name: claude-md-refactor
 description: "Use when the developer says 'refactor CLAUDE.md', 'CLAUDE.md is too long', 'split my agent instructions', 'clean up CLAUDE.md', 'progressive disclosure for CLAUDE.md', or when CLAUDE.md passes ~300 lines - analyses CLAUDE.md (and AGENTS.md / similar) for contradictions, keeps only the invariants and the links in the root, moves long write-ups into .docs/, flags vague or redundant rules for deletion, and audits every rule for the test or hook that enforces it (claim -> mechanism)."
-model: opus
+model: sonnet
 ---
 
 # claude-md-refactor - split CLAUDE.md before it bloats

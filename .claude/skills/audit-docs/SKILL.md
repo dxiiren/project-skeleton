@@ -1,7 +1,7 @@
 ---
 name: audit-docs
 description: "Use when the developer says '/audit-docs', 'audit the docs', 'are the docs up to standard', 'review my spec', 'check the requirements', or before any build starts from a written spec - runs layered adversarial audits (whole-set cross-check, then per-document deep dives) with fresh agents that never see the author's reasoning, verifies every claimed fix in the actual text, and records the trail in audits/ so the fix history cannot drift from what the documents say."
-model: opus
+model: sonnet
 ---
 
 # audit-docs - Adversarial layered audit of a document set

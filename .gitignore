@@ -3,3 +3,8 @@
 .mcp.json
 .claude/settings.local.json
 .claude/workspace/
+
+# Environment files hold real secrets; commit .env.example as the template.
+.env
+.env.*
+!.env.example

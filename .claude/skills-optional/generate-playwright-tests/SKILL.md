@@ -1,7 +1,7 @@
 ---
 name: generate-playwright-tests
 description: Use when the developer says 'generate playwright tests', 'write e2e tests for [page]', 'automate tests for [page]', or when authoring any Playwright spec — derives stable accessibility-tree locators via the Playwright MCP (browser_snapshot + browser_generate_locator), writes a two-layer spec, runs it, and pastes the result before claiming done.
-model: opus
+model: sonnet
 ---
 
 # generate-playwright-tests

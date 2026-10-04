@@ -1,7 +1,7 @@
 ---
 name: minimalist-ui
 description: Clean editorial-style interfaces. Warm monochrome palette, typographic contrast, flat bento grids, muted pastels. No gradients, no heavy shadows.
-model: opus
+model: sonnet
 ---
 
 # minimalist-ui

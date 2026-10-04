@@ -2,7 +2,7 @@
 name: antislop-layoutmobile
 description: "Mobile layout skill for antislop. Use for layouts that reflow on small screens: grids, overflow, tap targets. Load with the core."
 allowed-tools: Read Write Edit Glob Grep
-model: opus
+model: sonnet
 ---
 
 # antislop-layoutmobile

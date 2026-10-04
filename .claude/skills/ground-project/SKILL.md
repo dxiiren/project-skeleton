@@ -1,7 +1,7 @@
 ---
 name: ground-project
 description: "Use when the developer says '/ground-project', 'ground project', 'ground the kit', or 'finish scaffolding' — the one-time intelligent pass after init.ps1: reads the conventions doc + the project's real code, fills every remaining content token in CLAUDE.md/README/.docs, grounds the core skills' [GROUND: ...] markers in real code facts, enables qualifying optional skills, runs the skill audit to PASS, and boot-verifies the project."
-model: opus
+model: sonnet
 ---
 
 # ground-project — finish the scaffold with real code facts

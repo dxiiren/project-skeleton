@@ -1,7 +1,7 @@
 ---
 name: verify-before-claim
 description: Use before saying a change is done, fixed, working or verified - spawns a FRESH adversarial verifier subagent that receives only the requirement and the changed-file list, and must prove the change works with live evidence. Also triggers on 'verify this', 'prove it', 'are you sure it works'.
-model: opus
+model: sonnet
 ---
 
 # verify-before-claim — adversarial proof before the claim

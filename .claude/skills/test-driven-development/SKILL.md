@@ -1,7 +1,7 @@
 ---
 name: test-driven-development
 description: Use when implementing a feature or bugfix, before writing the production code - write the failing test first, SEE it fail for the right reason with the narrow test command, write the minimum code to pass, then refactor; never commit red. Covers infra work (behaviour/acceptance table, source-level guard tests proven with a mutant), impossible fixtures and sandboxed tests. Also triggers on 'tdd', 'test first', 'write the failing test', 'red green refactor'.
-model: opus
+model: sonnet
 ---
 
 # test-driven-development

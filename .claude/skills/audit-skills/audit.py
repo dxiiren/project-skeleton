@@ -10,7 +10,7 @@
 # Sections emitted:
 #   NO_SKILL_MD:   a skill-looking subdir of .claude/skills/ with no SKILL.md
 #   FRONTMATTER:   SKILL.md missing/empty description:, or name: != folder name
-#   BAD_MODEL:     a SKILL.md whose model: is not exactly {sonnet, opus}
+#   BAD_MODEL:     a SKILL.md whose model: is not exactly sonnet
 #   SKILL_BOM:     a SKILL.md saved with a UTF-8 BOM (breaks the loader)
 #   MISSING:       skills present on disk but absent from README.md
 #   ORPHANED:      README/CLAUDE entries with no matching skill folder
@@ -27,7 +27,7 @@ SKILLS_DIR = ".claude/skills"
 README = ".claude/skills/README.md"
 CLAUDE_MD = "CLAUDE.md"
 
-ALLOWED_MODELS = {"sonnet", "opus"}
+ALLOWED_MODELS = {"sonnet"}
 # Helper dirs that are not skills (no SKILL.md expected). Dot-dirs and any dir
 # whose name starts with "_" are also treated as non-skill helpers.
 NON_SKILL_DIRS = {"_shared"}
@@ -322,8 +322,8 @@ def main():
                    no_skill_md, "every skill dir has a SKILL.md")
     _print_section("FRONTMATTER (missing/empty description:, or name: != folder)",
                    fm_issues, "every SKILL.md has a description and a matching name")
-    _print_section("BAD_MODEL (model: not in {sonnet, opus})",
-                   bad_model, "every model: is sonnet or opus")
+    _print_section("BAD_MODEL (model: not sonnet)",
+                   bad_model, "every model: is sonnet")
     _print_section("SKILL_BOM (SKILL.md saved with a UTF-8 BOM; breaks the loader)",
                    [n + "  -> rewrite without a BOM" for n in bom_hits],
                    "all SKILL.md files are BOM-free")

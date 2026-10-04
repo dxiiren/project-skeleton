@@ -1,7 +1,7 @@
 ---
 name: setup-mcp
 description: "Use when the developer says 'Setup {X} MCP', 'Add {X} MCP', 'Install {X} MCP', 'onboard an MCP', or names a capability/URL to wire up — the ONE MCP skill for this repo. Reads registry.json for the server's setup metadata and walks the committed-stub + git-ignored-secret + tiered-enable wiring. Also onboards a NEW server by adding a registry record (never authoring a per-server skill)."
-model: opus
+model: sonnet
 ---
 
 # Setup MCP — the one registry-driven MCP skill
@@ -20,7 +20,7 @@ Pick the mode: "verify only" / "check" / "is X set up" -> `CHECK`; an already-re
 answers `UNREGISTERED` without changing anything, and you continue with `RESEARCH-B`.
 
 ```
-Agent(subagent_type: "setup-mcp", model: "opus",
+Agent(subagent_type: "setup-mcp", model: "sonnet",
       description: "Setup MCP (<mode> <X>)",
       prompt: "MODE: <CHECK|APPLY-A|RESEARCH-B|WIRE-B> <X>. Developer said: <their words verbatim>.
                <WIRE-B only: the approved verdict + record, verbatim from the RESEARCH-B report>")

@@ -14,7 +14,7 @@ This holds for a verify-only check too: running `just --version` or `just` yours
 a failure of this skill - hand it off:
 
 ```
-Agent(subagent_type: "setup-just", model: "opus",
+Agent(subagent_type: "setup-just", model: "sonnet",
       description: "Set up just",
       prompt: "<the developer's request verbatim; say VERIFY ONLY when they asked to check without changing anything>")
 ```

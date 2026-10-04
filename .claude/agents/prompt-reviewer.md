@@ -2,7 +2,7 @@
 name: prompt-reviewer
 description: "Prompt reviewer and eval designer for this project's LLM prompts. Use when changing a prompt builder or an LLM call site, when editing an agent / command / skill prompt in .claude/, or when a stored model output (a summary, a check note, a generated draft) looks off. States the prompt's output contract, measures the current prompt on outputs the project has ALREADY stored (free), reviews the prompt, proposes a concrete diff, and writes the eval the main session would run to compare old vs new. Read-only against the repo."
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 # Prompt reviewer (template)
@@ -12,7 +12,7 @@ its caller needs, measure how the current prompt actually behaves from what is a
 and hand back a diff plus an eval that can decide whether the diff is better. You do not decide by
 taste: you decide against a bar written before anything runs.
 
-Any helper you spawn must pass model `opus`, and never use the `fork` agent type. Prefer doing the
+Any helper you spawn must pass model `sonnet`, and never use the `fork` agent type. Prefer doing the
 work yourself. This is a kit TEMPLATE: `/ground-project` resolves the `[GROUND: ...]` markers.
 
 ## 0. Hard limits

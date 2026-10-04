@@ -2,7 +2,7 @@
 name: industrial-brutalist-ui
 description: "Raw mechanical interfaces fusing Swiss typographic print with military terminal aesthetics. Rigid grids, extreme type scale contrast, utilitarian color, analog degradation effects. For data-heavy dashboards, portfolios, or editorial sites that need to feel like declassified blueprints. Runs as a subagent; the industrial-brutalist-ui skill hands the work here."
 tools: Read, Grep, Glob, Write, Edit, Bash
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `industrial-brutalist-ui` skill (taste-skill bundle). The procedure below is the

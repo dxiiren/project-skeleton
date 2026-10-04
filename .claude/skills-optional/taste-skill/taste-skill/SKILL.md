@@ -1,7 +1,7 @@
 ---
 name: design-taste-frontend
 description: Anti-slop frontend skill for landing pages, portfolios, and redesigns. The agent reads the brief, infers the right design direction, and ships interfaces that do not look templated. Real design systems when applicable, audit-first on redesigns, strict pre-flight check.
-model: opus
+model: sonnet
 ---
 
 # design-taste-frontend
@@ -13,7 +13,7 @@ procedure lives in the `design-taste-frontend` agent (`.claude/agents/design-tas
 run it yourself:
 
 ```
-Agent(subagent_type: "design-taste-frontend", model: "opus",
+Agent(subagent_type: "design-taste-frontend", model: "sonnet",
       description: "design-taste-frontend task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

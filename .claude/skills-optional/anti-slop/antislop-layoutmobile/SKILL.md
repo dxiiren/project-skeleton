@@ -2,7 +2,7 @@
 name: antislop-layoutmobile
 description: "Mobile layout skill for antislop. Use for layouts that reflow on small screens: grids, overflow, tap targets. Load with the core."
 allowed-tools: Read Write Edit Glob Grep
-model: opus
+model: sonnet
 ---
 
 # antislop-layoutmobile
@@ -14,7 +14,7 @@ procedure lives in the `antislop-layoutmobile` agent (`.claude/agents/antislop-l
 run it yourself:
 
 ```
-Agent(subagent_type: "antislop-layoutmobile", model: "opus",
+Agent(subagent_type: "antislop-layoutmobile", model: "sonnet",
       description: "antislop-layoutmobile task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

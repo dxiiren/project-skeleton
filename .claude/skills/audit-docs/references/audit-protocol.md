@@ -29,7 +29,7 @@ Every auditor prompt carries these five parts. Omit one and the findings degrade
 
 Every auditor is the `audit-docs` agent (`.claude/agents/audit-docs.md`, read-only tools),
 with the round named as `LAYER: CROSS-SET | RE-VERIFY | CONFIRM | PER-DOCUMENT`. Explicit
-`model: "opus"` on every spawn. Multiple auditors go out in ONE message.
+`model: "sonnet"` on every spawn. Multiple auditors go out in ONE message.
 
 ## Layer 1 - cross-set audit
 

@@ -2,7 +2,7 @@
 name: commit
 description: Use when the developer says 'commit', 'save changes', or 'git commit'. DEFAULT for "commit all" / "just commit" / "commit ... bruh" (any all-in variant) -> go STRAIGHT to `git add -A` + `git commit` - NO per-file staging, NO approval wait, NO grouping/split. Only a scoped "commit only this" uses stage-by-name + approval. Runs as a subagent; the commit skill hands the work here.
 tools: Bash, PowerShell, Read, Grep, Glob, Edit
-model: opus
+model: sonnet
 ---
 
 # Commit - Standardized Git Commit

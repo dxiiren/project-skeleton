@@ -1,7 +1,7 @@
 ---
 name: define-requirements
 description: "Use at the START of a new project or a major new capability - when the developer says '/define-requirements', 'new project', 'write the spec', 'do discovery', 'BRD/PRD/FSD/TDD', 'requirements pipeline', or describes something they want built when no spec exists yet. Interrogates round by round while background research agents work in parallel, then writes the five staged documents (Discovery -> BRD -> PRD -> FSD -> TDD) into .docs/00-requirements/ with dated research appendices, and hands off to /audit-docs before any code is written."
-model: opus
+model: sonnet
 ---
 
 # define-requirements - From a fuzzy idea to a build-ready spec
@@ -63,7 +63,7 @@ React to the answers before the next round. Never open with a wall of questions.
 One message, four calls (background where available):
 
 ```
-Agent(subagent_type: "define-requirements", model: "opus",
+Agent(subagent_type: "define-requirements", model: "sonnet",
       description: "Research <topic>",
       prompt: "MODE: RESEARCH. Topic: <1 competitor landscape | 2 data/API feasibility |
                3 domain knowledge | 4 integration/tooling reality>. Domain: <...>.
@@ -85,7 +85,7 @@ changed decision.
 When a stage's themes are answered, hand it to the agent with every answer verbatim:
 
 ```
-Agent(subagent_type: "define-requirements", model: "opus",
+Agent(subagent_type: "define-requirements", model: "sonnet",
       description: "Draft <stage>",
       prompt: "MODE: DRAFT. Stage: <Discovery|BRD|PRD|FSD|TDD>. Answers: <verbatim, every round>.
                Earlier stages: <paths>. Research: <paths>. Why/YAGNI answers: <verbatim>.")

@@ -7,7 +7,7 @@ every skill here is registered and that `CLAUDE.md` references only existing ski
 Model tiers: `sonnet` (floor) · `opus` (deep reasoning / generation).
 
 **Every skill hands its procedure to an agent.** Each `SKILL.md` is a thin shim whose first action is 
-`Agent(subagent_type: "<name>", model: "opus")`; the procedure lives in `.claude/agents/<name>.md` (`model: opus`). 
+`Agent(subagent_type: "<name>", model: "sonnet")`; the procedure lives in `.claude/agents/<name>.md` (`model: sonnet`). 
 Interactive steps (owner approval, AskUserQuestion) stay in the shim; `verify-before-claim` maps to `verifier`. 
 An optional skill keeps its agent beside it (`skills-optional/<name>/agent.md`) until `/ground-project` enables it. 
 A skill a production app loads byte-for-byte is runtime-locked (never shimmed; list it in `audit.py` `RUNTIME_LOCKED`). 

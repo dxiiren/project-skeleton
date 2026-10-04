@@ -1,7 +1,7 @@
 ---
 name: imagegen-frontend-web
 description: Elite frontend image-direction skill for generating premium, conversion-aware website design references. CRITICAL OUTPUT RULE — generate ONE separate horizontal image FOR EVERY section. A landing page with 8 sections produces 8 images. Never compress multiple sections into one image. Enforces composition variety (not always left-text / right-image), background-image freedom, varied CTAs, varied hero scales (giant / mid / mini minimalist), narrative concept spine, second-read moments, and a single consistent palette across all images. Optimized for landing pages, marketing sites, and product comps that developers or coding models can accurately recreate.
-model: opus
+model: sonnet
 ---
 
 # imagegen-frontend-web
@@ -13,7 +13,7 @@ procedure lives in the `imagegen-frontend-web` agent (`.claude/agents/imagegen-f
 run it yourself:
 
 ```
-Agent(subagent_type: "imagegen-frontend-web", model: "opus",
+Agent(subagent_type: "imagegen-frontend-web", model: "sonnet",
       description: "imagegen-frontend-web task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

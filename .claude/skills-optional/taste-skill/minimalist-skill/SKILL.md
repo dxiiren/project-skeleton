@@ -1,7 +1,7 @@
 ---
 name: minimalist-ui
 description: Clean editorial-style interfaces. Warm monochrome palette, typographic contrast, flat bento grids, muted pastels. No gradients, no heavy shadows.
-model: opus
+model: sonnet
 ---
 
 # minimalist-ui
@@ -13,7 +13,7 @@ procedure lives in the `minimalist-ui` agent (`.claude/agents/minimalist-ui.md`)
 run it yourself:
 
 ```
-Agent(subagent_type: "minimalist-ui", model: "opus",
+Agent(subagent_type: "minimalist-ui", model: "sonnet",
       description: "minimalist-ui task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

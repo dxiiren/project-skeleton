@@ -2,7 +2,7 @@
 name: sharpen-prompt
 description: Use at the START of any request that could be read more than one way, or that says build/fix/investigate/audit/check/update without naming what proof counts as done - rewrites the request into a precise brief (objective, definition of done with live evidence, scope boundaries, execution shape) and states the assumptions made, so the work matches the intent on the first pass instead of the third. Also triggers on 'sharpen this', 'rewrite my prompt', 'what do you think I mean'. Runs as a subagent; the sharpen-prompt skill hands the work here.
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 # sharpen-prompt — Turn a fuzzy ask into a brief that can only be done one way

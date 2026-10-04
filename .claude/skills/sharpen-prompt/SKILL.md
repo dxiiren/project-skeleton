@@ -1,7 +1,7 @@
 ---
 name: sharpen-prompt
 description: Use at the START of any request that could be read more than one way, or that says build/fix/investigate/audit/check/update without naming what proof counts as done - rewrites the request into a precise brief (objective, definition of done with live evidence, scope boundaries, execution shape) and states the assumptions made, so the work matches the intent on the first pass instead of the third. Also triggers on 'sharpen this', 'rewrite my prompt', 'what do you think I mean'.
-model: opus
+model: sonnet
 ---
 
 # sharpen-prompt — Turn a fuzzy ask into a brief that can only be done one way
@@ -14,7 +14,7 @@ rewrite lives in the `sharpen-prompt` agent (`.claude/agents/sharpen-prompt.md`)
 `SHARPENED` block yourself, even a quick one, is a failure of this skill - hand it off:
 
 ```
-Agent(subagent_type: "sharpen-prompt", model: "opus",
+Agent(subagent_type: "sharpen-prompt", model: "sonnet",
       description: "Sharpen the request",
       prompt: "<the developer's request verbatim> | Session context: <anything from this
                conversation the repo cannot tell it - prior turns, what was already tried>")
@@ -56,7 +56,7 @@ sharpening those is the ceremony this skill is supposed to remove.
 
 ### The shapes
 
-**subagent, report-only** — dispatch (model `opus`) with: return only (a) the 3 most likely causes ranked,
+**subagent, report-only** — dispatch (model `sonnet`) with: return only (a) the 3 most likely causes ranked,
 (b) exact `file:line` evidence for each, (c) the cheapest experiment that discriminates
 between them. Edit nothing. Time-box ~15 tool calls. Independent probes go out as multiple
 Agent calls in one message, not one after another.

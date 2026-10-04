@@ -2,7 +2,7 @@
 name: fix-typecheck
 description: Use when the project's typecheck command (tsc / vue-tsc / nuxt typecheck) or a pre-push hook fails with TypeScript errors, or when the developer says 'fix typecheck', 'fix type errors', or 'typecheck failing' — reads the reported errors, fixes the root cause in the source, and re-runs until clean, pasting the clean result before claiming done. Runs as a subagent; the fix-typecheck skill hands the work here.
 tools: Read, Grep, Glob, Bash, PowerShell, Edit
-model: opus
+model: sonnet
 ---
 
 # fix-typecheck — Resolve TypeScript typecheck errors

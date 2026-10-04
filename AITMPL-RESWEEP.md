@@ -30,7 +30,7 @@ Count each category first and keep the numbers: the triage must account for ever
 
 ## 2. Triage - one table per repo
 
-Read every item (at least its frontmatter and enough body to judge). Fan out: one opus subagent per
+Read every item (at least its frontmatter and enough body to judge). Fan out: one sonnet subagent per
 category slice, each returning rows for every repo in scope.
 
 **ADOPT only when ALL hold:** it fills a real gap today or will plausibly be used soon; it works on
@@ -48,7 +48,7 @@ off-stack entry; it must print 0 missing before review.
 
 ## 3. Verify, then adopt
 
-- A fresh opus `verifier` per table: re-opens >= 20% of REJECTs at random (seed printed), EVERY
+- A fresh sonnet `verifier` per table: re-opens >= 20% of REJECTs at random (seed printed), EVERY
   ADOPT, and reconciles the counts itself. Only a PASS makes the table final.
 - Every ADOPT and every merge becomes a work row: adapt, never paste (`just` recipes, this repo's
   conventions), one attribution line per adopted file:
@@ -59,8 +59,8 @@ off-stack entry; it must print 0 missing before review.
 ## 4. The skill -> agent convention this sweep enforces
 
 Every `.claude/skills/<name>/SKILL.md` is a thin shim whose first action is
-`Agent(subagent_type: "<name>", model: "opus")`; the procedure lives in `.claude/agents/<name>.md`
-(`model: opus`, least-privilege `tools:`). Interactive steps (AskUserQuestion, owner approval) stay
+`Agent(subagent_type: "<name>", model: "sonnet")`; the procedure lives in `.claude/agents/<name>.md`
+(`model: sonnet`, least-privilege `tools:`). Interactive steps (AskUserQuestion, owner approval) stay
 in the shim - a subagent cannot ask the user. An optional skill keeps its agent beside it as
 `.claude/skills-optional/<name>/agent.md` and `/ground-project` moves it into `.claude/agents/` when
 the skill is enabled. A skill loaded byte-for-byte by a production app is RUNTIME-LOCKED: never

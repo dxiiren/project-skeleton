@@ -1,7 +1,7 @@
 ---
 name: design-taste-frontend-v1
 description: The original v1 taste-skill, preserved for projects depending on its exact behavior. The current default is `design-taste-frontend` (v2 experimental), which is a substantial rewrite. Use this v1 install name only if you need exact backward compatibility.
-model: opus
+model: sonnet
 ---
 
 # design-taste-frontend-v1
@@ -13,7 +13,7 @@ procedure lives in the `design-taste-frontend-v1` agent (`.claude/agents/design-
 run it yourself:
 
 ```
-Agent(subagent_type: "design-taste-frontend-v1", model: "opus",
+Agent(subagent_type: "design-taste-frontend-v1", model: "sonnet",
       description: "design-taste-frontend-v1 task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

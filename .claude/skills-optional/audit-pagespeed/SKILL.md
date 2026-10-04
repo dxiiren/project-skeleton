@@ -1,7 +1,7 @@
 ---
 name: audit-pagespeed
 description: Use when the developer says 'audit pagespeed', 'run pagespeed', 'check pagespeed insights', 'test on pagespeed.web.dev', 'are we 100', or 'why are we not 100' — drives pagespeed.web.dev with the Playwright MCP, lifts the full Lighthouse JSON for BOTH form factors straight off the page, and turns every failing audit into a source-mapped fix list tied to the metric it actually moves. Carries the full road-to-100 playbook (dead-weight audit, prototype discipline, variance math, the automated 100-hunt).
-model: opus
+model: sonnet
 ---
 
 # audit-pagespeed — real PageSpeed Insights scores, with the failing elements
@@ -14,7 +14,7 @@ each failing audit to source, the full road-to-100 playbook) lives in the `audit
 (`.claude/agents/audit-pagespeed.md`). Hand the work to it - do not run it yourself:
 
 ```
-Agent(subagent_type: "audit-pagespeed", model: "opus",
+Agent(subagent_type: "audit-pagespeed", model: "sonnet",
       description: "PageSpeed audit",
       prompt: "MODE: <AUDIT|PLAN>. Developer said: <their words verbatim>. URL: <if named>.")
 ```

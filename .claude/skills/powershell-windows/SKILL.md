@@ -1,7 +1,7 @@
 ---
 name: powershell-windows
 description: Use when writing or editing any PowerShell in this repo - a *.ps1 (init.ps1, initial-setup.ps1, a stack's setup.ps1, tools/*, the Pester suite), a justfile recipe (the justfile shell is powershell.exe 5.1), or a one-liner handed to a developer - and when a .ps1, a Pester test or a just recipe fails with 'parameter or', 'Unexpected token', 'call depth overflow', mangled quotes, a BOM, or a wrong exit code. Lists the PS 5.1 / pwsh 7 / Git Bash traps, the 5.1-vs-7 capability checklist, and ships scan.ps1 (incl. a real 5.1 parse of the files that must run there).
-model: opus
+model: sonnet
 ---
 
 # powershell-windows
@@ -18,7 +18,7 @@ script skeleton) and `scan.ps1` live in the `powershell-windows` agent
 the scan yourself:
 
 ```
-Agent(subagent_type: "powershell-windows", model: "opus",
+Agent(subagent_type: "powershell-windows", model: "sonnet",
       description: "PowerShell work (write / review / scan)",
       prompt: "<the developer's request verbatim, the files or recipe involved, any error text; say SCAN ONLY when they asked to check without changing anything>")
 ```
@@ -37,7 +37,7 @@ A request to review, check, audit or explain a script (anything short of "write"
 to `powershell-review`, which has no shell at all:
 
 ```
-Agent(subagent_type: "powershell-review", model: "opus", description: "Review <file>",
+Agent(subagent_type: "powershell-review", model: "sonnet", description: "Review <file>",
       prompt: "<the request verbatim + the file paths>")
 ```
 

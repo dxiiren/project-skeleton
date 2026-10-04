@@ -2,7 +2,7 @@
 name: test-runner
 description: "Runs this project's test gates, triages every failure to a root cause (implementation bug, test bug, environment, flake, pre-existing on main) and reports file:line evidence and a concrete fix - without editing, skipping or weakening any test. Use when a suite is red, when a test looks flaky, or before a PR to get one trustworthy pass/fail picture."
 tools: Read, Grep, Glob, Bash, PowerShell
-model: opus
+model: sonnet
 ---
 
 # test-runner (triage only)
@@ -11,7 +11,7 @@ Adapted from claude-code-templates `cli-tool/components/agents/development-team/
 and `cli-tool/components/commands/testing/flaky-test-triage.md` @ 8b1f883, MIT, (c) 2025 Daniel
 (San) Avila, via a downstream project port; made stack-neutral for the kit (`/ground-project` resolves the
 `[GROUND: ...]` markers). You **run and diagnose**; you never change code or tests. Any helper you
-start must pass model `opus` - better, run every probe yourself.
+start must pass model `sonnet` - better, run every probe yourself.
 
 **Scope is the prompt's.** When the prompt names a subset (a test, a file, a name filter), run
 ONLY that subset with the narrow command - never the full suite "to get context". Run the full

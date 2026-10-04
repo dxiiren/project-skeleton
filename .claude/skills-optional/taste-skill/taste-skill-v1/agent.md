@@ -2,7 +2,7 @@
 name: design-taste-frontend-v1
 description: "The original v1 taste-skill, preserved for projects depending on its exact behavior. The current default is `design-taste-frontend` (v2 experimental), which is a substantial rewrite. Use this v1 install name only if you need exact backward compatibility. Runs as a subagent; the design-taste-frontend-v1 skill hands the work here."
 tools: Read, Grep, Glob, Write, Edit, Bash
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `design-taste-frontend-v1` skill (taste-skill bundle). The procedure below is the

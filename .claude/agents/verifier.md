@@ -2,7 +2,7 @@
 name: verifier
 description: Adversarial verifier. Given ONLY the original requirement and the list of changed files, tries to PROVE the change is broken using live evidence. Never told what the implementer did or why.
 tools: Read, Grep, Glob, Bash, PowerShell, Agent, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_select_option, mcp__playwright__browser_press_key, mcp__playwright__browser_wait_for, mcp__playwright__browser_evaluate, mcp__playwright__browser_network_requests, mcp__playwright__browser_console_messages, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_close
-model: opus
+model: sonnet
 ---
 
 # Verifier (Adversarial)
@@ -34,7 +34,7 @@ other. The usual split:
 - **Reach** — does it apply everywhere the requirement implies, or only where you looked?
 
 Dispatch these as **multiple Agent tool calls in a single message** so they run
-concurrently, each with `model: "opus"` set explicitly (a helper started without one inherits the
+concurrently, each with `model: "sonnet"` set explicitly (a helper started without one inherits the
 main session's model). Give each helper exactly three things: the requirement verbatim, its one
 probe, and the instruction to return ONLY numbered evidence lines — each a command
 actually run plus its actual output — and to fix nothing.

@@ -1,7 +1,7 @@
 ---
 name: systematic-debugging
 description: Use when facing any bug, test failure, flaky test or unexpected behaviour, BEFORE proposing a fix - enforces a four-phase root-cause method (live state first, investigate, compare with a working sibling, one hypothesis, test-first fix), stops after three failed fixes to question the design, and ships find-polluter.sh and an exit-125-aware bisect wrapper. Also triggers on 'debug this', 'why is this failing', 'this test is flaky', 'it works on my machine', 'unexpected behaviour', 'find the root cause'.
-model: opus
+model: sonnet
 ---
 
 # systematic-debugging
@@ -17,7 +17,7 @@ live in the `systematic-debugging` agent (`.claude/agents/systematic-debugging.m
 to it - do not start guessing at fixes yourself:
 
 ```
-Agent(subagent_type: "systematic-debugging", model: "opus",
+Agent(subagent_type: "systematic-debugging", model: "sonnet",
       description: "Find the root cause",
       prompt: "<the developer's report verbatim, the exact error text, what was already tried and how many fixes failed; say INVESTIGATE ONLY when they did not ask for a fix>")
 ```

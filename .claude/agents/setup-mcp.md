@@ -2,7 +2,7 @@
 name: setup-mcp
 description: "Use when the developer says 'Setup {X} MCP', 'Add {X} MCP', 'Install {X} MCP', 'onboard an MCP', or names a capability/URL to wire up — the ONE MCP skill for this repo. Reads registry.json for the server's setup metadata and walks the committed-stub + git-ignored-secret + tiered-enable wiring. Also onboards a NEW server by adding a registry record (never authoring a per-server skill). Runs as a subagent; the setup-mcp skill hands the work here."
 tools: Read, Grep, Glob, Bash, PowerShell, Edit, Write, WebFetch, WebSearch
-model: opus
+model: sonnet
 ---
 
 # Setup MCP — the one registry-driven MCP skill (agent)

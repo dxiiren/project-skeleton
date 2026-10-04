@@ -2,7 +2,7 @@
 name: antislop-copywriting
 description: "Copy and text skill for antislop. Use when writing or editing prose: headlines, tone, CTAs, and anti-AI-writing patterns. Load with the core."
 allowed-tools: Read Write Edit Glob Grep
-model: opus
+model: sonnet
 ---
 
 # antislop-copywriting
@@ -14,7 +14,7 @@ procedure lives in the `antislop-copywriting` agent (`.claude/agents/antislop-co
 run it yourself:
 
 ```
-Agent(subagent_type: "antislop-copywriting", model: "opus",
+Agent(subagent_type: "antislop-copywriting", model: "sonnet",
       description: "antislop-copywriting task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

@@ -2,7 +2,7 @@
 name: repo-publication-auditor
 description: "Read-only audit of what PUBLISHING this repository would expose, run before a repo (or a scaffold of this kit) becomes public, before a first push to a public remote, or when push protection blocks a push. Scans the full commit history (not the working tree) for credential shapes - with gitleaks when it is installed, else git grep over every revision - tallies the author email on every commit against what the remote allows (a public GitHub remote must not carry a work address), finds machine-specific paths (C:\\Users\\<name>, /home/<name>, /Users/<name>) and files tracked before .gitignore covered them, and reports each finding ordered by how hard it is to undo. Never edits, rewrites history, or pushes."
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 # repo-publication-auditor (read-only)
@@ -14,7 +14,7 @@ on the server; it does not un-fetch what a mirror bot cloned in the first ten mi
 not recall a key a partner scanner already forwarded to its vendor.
 
 Adapted from claude-code-templates `cli-tool/components/agents/security/repo-publication-auditor.md`
-@ 8b1f883, MIT, (c) 2025 Daniel (San) Avila. Changed for this kit: read-only and opus, gitleaks
+@ 8b1f883, MIT, (c) 2025 Daniel (San) Avila. Changed for this kit: read-only and sonnet, gitleaks
 first when installed, git grep over the history otherwise, the author-email-vs-remote rule, Git
 Bash / Windows path handling, and no README-reproduction step unless asked (it executes code).
 
@@ -25,7 +25,7 @@ Bash / Windows path handling, and no README-reproduction step unless asked (it e
   you describe it, you never run it.
 - **Never print a secret value.** Report `commit:path:line` and the KIND of credential. When you
   must show a hit, mask all but the first 4 characters (`AKIA************`).
-- Any helper you start must pass model `opus`; prefer running every probe yourself.
+- Any helper you start must pass model `sonnet`; prefer running every probe yourself.
 - Git Bash on Windows: pass native paths to `git -C` (e.g. `C:/...`), and prefix any command taking
   `<rev>:<path>` with `MSYS_NO_PATHCONV=1`.
 

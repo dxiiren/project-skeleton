@@ -1,7 +1,7 @@
 ---
 name: high-end-visual-design
 description: Teaches the AI to design like a high-end agency. Defines the exact fonts, spacing, shadows, card structures, and animations that make a website feel expensive. Blocks all the common defaults that make AI designs look cheap or generic.
-model: opus
+model: sonnet
 ---
 
 # high-end-visual-design
@@ -13,7 +13,7 @@ procedure lives in the `high-end-visual-design` agent (`.claude/agents/high-end-
 run it yourself:
 
 ```
-Agent(subagent_type: "high-end-visual-design", model: "opus",
+Agent(subagent_type: "high-end-visual-design", model: "sonnet",
       description: "high-end-visual-design task",
       prompt: "<the developer's request verbatim, plus the files/pages/brief involved; say AUDIT ONLY or PLAN ONLY when they asked to change nothing>")
 ```

@@ -2,7 +2,7 @@
 name: full-output-enforcement
 description: "Overrides default LLM truncation behavior. Enforces complete code generation, bans placeholder patterns, and handles token-limit splits cleanly. Apply to any task requiring exhaustive, unabridged output. Runs as a subagent; the full-output-enforcement skill hands the work here."
 tools: Read, Grep, Glob, Write, Edit, Bash
-model: opus
+model: sonnet
 ---
 
 <!-- Agent half of the `full-output-enforcement` skill (taste-skill bundle). The procedure below is the

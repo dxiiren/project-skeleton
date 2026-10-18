@@ -222,8 +222,10 @@ Never a tracked `.env` (`git ls-files .env` must be empty).
 
 ## Git rules (MANDATORY)
 
-1. Before the first commit: `git config user.email "mohdakmal875@gmail.com"` and
-   `git config user.name "akmal"` (repo-local).
+1. Before the first commit run `git remote get-url origin` and let the remote pick the author: a work
+   Gitea remote -> the work address from the owner's user-level `~/.claude/CLAUDE.md`; anything else,
+   every `github.com` repo included -> set NO repo-local `user.email` and pass no `-c user.email`,
+   so the configured global default stands. Never write an address into a tracked file.
 2. **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:` ...).
 3. **NO attribution trailers** — never `Co-Authored-By`, "Generated with Claude Code", or
    session links, in commit messages, PR bodies, or issue comments.

@@ -3,6 +3,21 @@
 > Human-facing developer docs live in [`.docs/`](./.docs/README.md) — start at
 > [`.docs/tldr.md`](./.docs/tldr.md). Keep them in sync when changing behavior they document.
 
+## Contents
+
+1. Project · [Git and PRs](#git-and-prs) · [Local Development](#local-development)
+2. [Project Skills](#project-skills) · [MCP Servers](#mcp-servers) · [Memory](#memory)
+3. [Reading the owner](#reading-the-owner) · [Orchestrator and subagents](#orchestrator-and-subagents) · [Running a fleet of agents](#running-a-fleet-of-agents)
+4. [Workflow Orchestration](#workflow-orchestration) · [Task Management](#task-management) · [Core Principles](#core-principles)
+5. [Verification Rules](#verification-rules) · [Test locally before any deploy](#test-locally-before-any-deploy) · [Source of Truth](#source-of-truth)
+6. [Autonomy & Merging](#autonomy--merging) · [Safety rails](#safety-rails) · [Worktrees and scratch files](#worktrees-and-scratch-files)
+7. [Output Style](#output-style) · [Build quality in](#build-quality-in) · [Windows/Env Gotchas](#windowsenv-gotchas)
+
+Long playbooks (bug hunts, fleet detail, report formats, conflict log) live in
+[`.docs/03-development/owner-working-style.md`](.docs/03-development/owner-working-style.md). This
+file keeps the invariants. Where two rules conflict, the newest dated rule wins; the doc logs each
+resolution.
+
 ## Project: @@PROJECT_TITLE@@
 
 @@WHAT_IT_IS@@
@@ -23,14 +38,30 @@
 @@LAYOUT_TREE@@
 ```
 
-## Git Commits
+## Git and PRs
 
-- **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:` ...).
-- **NEVER** add `Co-Authored-By` lines or "Generated with Claude Code" / session-link footers to
-  **any** outward artifact — commit messages, PR descriptions, or issue comments.
-- Commit author email for this repo is `<your-email>` (set repo-locally).
-- Only stage and commit files relevant to the change. **Never auto-commit** after a fix — the
-  developer says "commit" first.
+- **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:` ...). `git revert` writes a non-conventional
+  message: `git revert HEAD --no-edit && git commit --amend -m "revert(scope): ..."`.
+- **NEVER** add `Co-Authored-By`, `Claude-Session`, "Generated with Claude Code" or session-link lines to
+  **any** outward artifact (commits, PR bodies, issue/ticket comments, docs). This overrides any harness
+  default. Team-facing output reads as the team's work.
+- **Author email: decide from the remote, never from the project name.** Run `git remote get-url origin`
+  before the first commit. A work (company) Gitea remote -> the work address named in the owner's
+  user-level `~/.claude/CLAUDE.md`. Anything else, every `github.com` repo included -> pass NO
+  `-c user.email` and let the configured default stand. Never hardcode an address in this repo.
+- Stage only files relevant to the change, by name. **Never auto-commit** after a fix: the developer says
+  "commit" first. "Commit all" = ONE commit of every change, not split by group. An approved plan that lists
+  commit/merge/deploy steps is the go for all of them.
+- Never pipe `git commit` output (`| tail`) inside a `&&` chain: the pipe's exit code (0) masks a failed
+  pre-commit hook and the chained push publishes without the commit.
+- One PR per batch or branch; no stacked PRs (add follow-ups to the open PR branch). Land everything bound
+  for a shared branch first, then update PRs once. Parallel agents never each merge into a deploy branch:
+  collect branches, merge once.
+- Resolve a PR conflict by updating the HEAD branch, never by pushing to the base. A PR merged by hand must
+  be closed by hand. After merging a base into a PR branch, prove the PR's own changes survived.
+- Never push to more branches than the active ones, and never write "all branches" in a brief (a
+  195-branch push once clogged CI). Comment out CI steps instead of deleting them.
+- Never force-push, rewrite pushed history, or run destructive git on shared work without an explicit go.
 
 ## Local Development
 
@@ -83,6 +114,75 @@ Lightweight, single-developer, file-based project memory at `.claude/memory/`:
 - After writing a fact file, add its one-line pointer to `MEMORY.md`. Update rather than
   duplicate; delete a memory that turns out wrong. Don't store what the repo already records.
 
+## Reading the owner
+
+- Terse **Malaysian English**: "on/off the X" means turn X on/off, not "regarding X". Read the literal ask.
+- Answer a direct question first (yes/no + why). Do not build an adjacent thing or over-analyse.
+- "Write a prompt/file" means deliver it and stop; it is not a go to launch the job. Creative or
+  owner-facing work needs an explicit go even under "do it all yourself".
+- "Fix all" / "do whatever you can" never covers DDL or writes on a shared database; that needs a separate
+  go naming the DB.
+- The owner has ADHD: answer first, one idea at a time, short. Apply the `i-have-adhd` skill when present.
+- Never state a checkable environment fact (market open, day, which app owns a port, is a service up)
+  without running the one command that checks it. Never park a decision ("your call"): check the reference
+  (sibling repo, spec, live system), decide, act. Never call broken code "someone else's to fix".
+- When asked "are you confident / 100%?", research first (read the sources, run live checks), then answer.
+  Verify the owner's claims too: "don't always trust what I say, do check".
+
+## Orchestrator and subagents
+
+- **The main session is the orchestrator**: it answers the owner and dispatches; it does not do long work.
+  Anything that waits (CI, deploys, merge-when-green), fixes code, or loops goes to a subagent. The main
+  session runs only quick read-only checks (seconds) and never chains foreground waits while the owner talks.
+- **Every subagent runs on `sonnet`**: set `model: "sonnet"` explicitly on each Agent call (newest rule,
+  2026-10-04; never Opus, never Fable). An agent definition's own `model:` does not override this. Put one
+  line in every brief: any helper must also pass `sonnet`, or better run its probes itself. Never use the
+  `fork` type for delegated work (it inherits the main model).
+- A brief states: goal, tools, hard rules, what NOT to touch, a time box, the report format, the worktree
+  rule, "never `git stash`", and, for UI work, the control-inventory requirement. One narrow task per agent;
+  never queue new instructions onto a busy one (stop and relaunch fresh).
+- Parallelise independent work in ONE message. Heavy work (many files, builds, full reviews) -> subagent;
+  at most ~3 light calls -> parallel tool calls in the main session.
+- Relay each report in your own words (the owner never sees it) and verify a surprising claim first. A
+  report with "not checked / unverified" items is not done: send it back before relaying.
+- Approvals do not reach subagents: quote the owner's go verbatim in the brief, or finish the stalled merge
+  yourself. Never relay the question back.
+- Prefer inline subagents to the Workflow engine (measured 2.4x cheaper, same result); consider it only for
+  15+ independent items needing real reasoning. Never SendMessage a Workflow-owned agent.
+- Do not use Codex CLI for jobs; use Claude agents or plain scripts.
+
+## Running a fleet of agents
+
+- **Fix every known issue unasked.** Never list-and-ask, never leave BLOCKED / "for review" / "optional".
+  Exception: the cost guard below.
+- **Cost guard: stay inside the literal ask** (newest; beats "fix unasked" when they collide). Before
+  dispatching any agent expected to run over 1 h, restate the literal ask in one line and check the work is
+  inside it. If a gate's first result fails for environment, data or by-design reasons (not code), stop: one
+  line to the owner with the evidence, a recommendation and the cost in hours. Never commit extra work
+  (rewrites, refactors) beyond what was asked. Cost matters: the owner is on flat subscriptions.
+- **Monitor your own agents without being asked.** TaskStop each agent the moment its FINAL report lands,
+  even if it says "completed"; sweep the agent list at every report you relay. Silent more than 20 min
+  (check its own worktree, scratch dir, ports and pushed branch, plus CPU and orphan processes) -> stop and
+  relaunch. An interim "waiting for X" note is not final. The owner must never have to paste the agent list.
+- **Honest ETAs.** Add up real gate times; restate the ETA when new work appears; never say "all done at X"
+  while anything is open. Before any status or ETA, measure within the last 5 min: who holds shared locks,
+  that the job's output file exists and is growing, CPU and free RAM, no stuck processes. "Starting now" is a
+  plan, not a fact. The deploy candidate has first claim on shared resources; side jobs yield.
+- **Never just wait.** While a gate or agent runs, start whatever does not depend on it: next hunt round on
+  the exact code tree, the diagnosis of a failure already seen, a dry-run, a pre-drafted report. Batch
+  dependency bumps into one branch and one gate. State minutes saved when you do it. At every agent report
+  ask "what is idle right now?" and start it in the same reply.
+- Scope new findings: fix what appears during a sweep, log what appears after the cut-off for the next batch.
+- Automate, do not make the owner babysit: before asking him to run, watch or time anything, ask what stops
+  you doing it yourself (spawn it, observe it, terminate it). A monitor that pings on routine ticks is
+  babysitting by proxy; notify only on state changes.
+- A loop with no natural end gets a hard stop and clock time declared up front. Owner says pause: kill every
+  agent, monitor, background push and server FIRST, then write the resume note. Owner goes to sleep: finish
+  everything decision-free, leave one decision item, quiet check-ins.
+- Do not touch what you did not start: never kill another session's engines or processes (identify the PID
+  first), never `docker prune`, remove only containers you created by exact name. Close apps the work no
+  longer needs (Docker Desktop, emulators) without being asked; start them again when needed.
+
 ## Workflow Orchestration
 
 ### 1. Plan Mode Default
@@ -99,7 +199,8 @@ Lightweight, single-developer, file-based project memory at `.claude/memory/`:
 - For complex problems, throw more compute at it via subagents.
 - One task per subagent for focused execution.
 - Parallelize independent sub-tasks in a SINGLE message with multiple Agent calls; go sequential
-  only when one sub-task's result feeds the next.
+  only when one sub-task's result feeds the next. Fix one case by hand first so every agent gets the same
+  before/after template. Model, briefs and monitoring: see **Orchestrator and subagents**.
 
 ### 3. Self-Improvement Loop
 
@@ -109,6 +210,9 @@ Lightweight, single-developer, file-based project memory at `.claude/memory/`:
 - Review lessons at session start — that is what `.claude/memory/MEMORY.md` is loaded for.
 - Persist every correction as a `metadata.type: feedback` memory (see **Memory** above). A
   correction that only changes the current session is a correction lost.
+- Change an artifact AND its driver in the same turn (skill <-> its agent, hook <-> `settings.json`,
+  template <-> the script that reads it, doc <-> its rendered diagram/export). One half alone is a silent
+  no-op. Name the pair first, edit both, then grep to prove it.
 
 ### 4. Verification Before Done
 
@@ -151,6 +255,14 @@ nothing reads is worse than none.
 - **Simplicity First**: make every change as simple as possible. Impact minimal code.
 - **No Laziness**: find root causes. No temporary fixes. Senior developer standards.
 - **Minimal Impact**: changes should only touch what's necessary. Avoid introducing bugs.
+- **Accuracy over assumption**: field names, types, paths and values come from the actual source, never
+  from memory. Ask for server-side paths; never assume them.
+- **Structural fixes, not band-aids**: one fix covering every branch, or name the tradeoff before writing
+  the patch. Never water down a failing assertion to get green; the bug may be in the code, not the test.
+- "Remove / delete" means delete (routes, components, mock data, their specs), not rebuild. Comment code
+  ported from another file with its source. Same quantity on two surfaces comes from ONE expression.
+- Prefer an MCP to a throwaway script for its domain; fall back to native tools silently if it is down.
+  Prefer non-global installs (`npx`) and ask before any machine-wide install.
 
 ## Verification Rules
 
@@ -160,6 +272,42 @@ nothing reads is worse than none.
   deployment is present".
 - If verification is blocked (VPN down, host unreachable, auth failing), say so explicitly and mark
   the item **UNVERIFIED**. Never report success you could not prove.
+- Open every page type yourself for UI-wide changes (charts, axis labels, SVG text included); never pass on
+  an agent's "0 left". Before saying "nothing else is left", run an independent adversarial verifier per
+  stage and fix what it finds.
+- A test that only asserts "no error / no 500" verifies nothing. Prove a guard by breaking the code and
+  watching it go red. Confirm a failing PR test also fails on the current base before debugging it.
+- Report seconds as a real browser sees them, never one sample on a noisy host. Judge a long run alive by
+  its whole process tree's CPU. A fan-out result is final only on the completion notification.
+- Run any `! <command>` you hand the owner yourself first, exact string.
+
+## Test locally before any deploy
+
+(Owner: "never deploy until u test everything locally".)
+
+- **Never deploy (CI deploy, host restart with new code, the repo's deploy recipe) until every change in it
+  has been exercised locally**: the app started from the exact branch tip, a real login, each fix clicked
+  through in a real browser (Playwright) with screenshots; backend changes on a local engine. A type check,
+  lint, unit test or green build is NOT a local test. "Pushed" is not "tested".
+- **Test the WHOLE screen the ticket is on**, not the fixed element: every button, dropdown option, filter,
+  sort, pagination, row action, every Add/Edit form filled, scrolled to the bottom and submitted, page
+  scroll, at 1920x945 and 1366x768, with a PASS/FAIL per control. Download and view every image on the
+  ticket (description, attachments, comments) before deciding what it asks.
+- **Control inventory is mandatory in every UI test**: the script auto-lists every interactive control on the
+  screen and its popups (buttons, comboboxes, checkboxes, menu items, links, textboxes, header sort/filter,
+  row menus) and outputs `control | action | result | PASS/FAIL/UNTESTED`. UNTESTED = FAIL. Every main
+  action (Assign, Save, Submit, Continue) runs to the end and its result is shown. Put this in every
+  subagent brief; reject any report without the inventory; never mark a ticket Deployed/Done without it.
+- Per-ticket agents prove the fix locally before pushing; deploy only after a verification report shows PASS
+  for every item. A FAIL or UNVERIFIED item is pulled from the batch, never deployed "to check live".
+  Run local verifications in parallel (own worktree + port each).
+- Run the exact artifact CI builds (same flags, same heap cap) before pushing a CI change; prove the real
+  implementation locally, not just its primitive. A deny-by-default guard is proven only by the affected
+  areas' FULL e2e lanes. Full gate + an independent verifier on the exact final sha, then deploy; a late
+  merge means re-gate. Merged tree must equal the gated tree.
+- After merging any frontend change, rebuild the served bundle AND look at the page yourself before giving
+  the owner a link. A fix visible to the owner (public site, served app) is not done until live: push, or
+  say "not live yet".
 
 ## Source of Truth
 
@@ -173,14 +321,81 @@ nothing reads is worse than none.
   "which branch should I use" — pick the safe default (a new worktree off the target branch), state
   the choice in one line, and proceed.
 - Ask ONLY when the action is destructive and irreversible: force-push, branch or repo deletion,
-  history rewrite on a protected branch, or DDL/writes on a shared database.
+  history rewrite on a protected branch, or DDL/writes on a shared database (see **Safety rails**).
+- Act, do not ask, on reversible fixes: fix blockers yourself, timebox diagnosis to ~5 min and run cheap
+  checks in parallel. A red PR you touched is yours to drive to green. When the CI red is only a billing or
+  quota block (jobs never start), ignore it; a run that actually executes stays authoritative.
+- Read the real failing log before naming a cause; "BLOCKED" is not an exit. When everything fails at once,
+  suspect the checker before the artifact.
+
+## Safety rails
+
+- **Shared databases and environments**: "proceed" on DB work = PREPARE artifacts locally. Never run DDL or
+  writes on a shared/client DB, nor live-probe an allowed write endpoint on a shared env (even with an empty
+  body), without an explicit per-action "run it on X". Show every DB script to the owner before it runs.
+- A deploy to a shared environment needs the owner's explicit OK each time (urgent or not) unless this
+  repo's own docs say the recipe deploys on merge: ask in one line with the reason and side effects.
+- Never start/restart/kill the owner's local dev server yourself unless this repo's docs say you may. If you
+  broke it, ask for the restart crisply in the same message.
+- Secrets: never hardcode a credential, token, connection string or personal data (phone, IC, passwords) in
+  code, docs, tests, memory or examples. Use placeholders; real values live in git-ignored config
+  (`.env`, a credentials file read through one helper). Never read or print `.env` to verify a flow: use the
+  browser session or test seams. Playwright snapshots can store typed passwords in cleartext: mask or delete.
+- **Public repos**: check visibility (`gh repo view --json visibility`) before any commit or push. On a
+  public repo nothing about private infrastructure or the owner's employer (hosts, registries, IPs, runner
+  layout, internal ports, company names, personal domains) appears in files, commits, branch names or PR
+  text. Removing it later does not undo it. Grep before pushing.
+- UI automation on the owner's machine targets a window handle or the app under test, never global
+  keystrokes, fixed-coordinate clicks or `java.awt.Robot`. Bound every remote/container probe with
+  `timeout 25` and a known path. More: [`owner-working-style.md`](.docs/03-development/owner-working-style.md) section 5.
+- Running tests: edit a test -> run it and paste the real `Tests run: N, Failures: F` line BEFORE saying
+  done. Never touch real workspace names/ids in tests and never run a filesystem test before its sandbox
+  exists. Tests self-seed their fixtures; never rely on pre-existing data.
+
+## Worktrees and scratch files
+
+- **Every git worktree lives under `<code root>/worktree/`**, never as a sibling of the repos:
+  `git -C <repo> worktree add ../worktree/<repo>-<purpose> <branch>`. Applies to the main session, every
+  subagent, workflows and `isolation: "worktree"`. Put this rule in every brief that may create one.
+- Scratch and junk (probe scripts, logs, suite output, PR-body drafts, patches) go to `worktree/_junk/` or
+  inside the worktree being worked in; never to the top of the code root. Remove a worktree the moment its
+  work is merged or abandoned (commit first). The owner's permanent, named top-level worktrees are never
+  moved, removed or backed up by a cleanup; repeat this in every cleanup brief.
+- **Never `git stash`**: the stash list is shared by every worktree, and parallel agents pop each other's
+  WIP. One agent owns a file at a time. No commits in a worktree while parallel lanes edit it.
 
 ## Output Style
 
-- Lead with a one-line summary, then short numbered sections.
+- Lead with a one-line summary, then short numbered sections. Answer first; details after.
 - Keep findings and analysis OUT of dense multi-column tables. Tables are for tabular DATA (report
-  grids, status matrices) — never for burying conclusions the reader must act on.
+  grids, status matrices, per-status breakdowns) — never for burying conclusions the reader must act on.
 - Use mermaid for flows, and a table of contents for any document over ~100 lines.
+- **ADHD-friendly**: any report or page for the owner is short: answer first, cards and at most one chart,
+  details collapsed (`<details>`), a STATUS block, never a long multi-section research document. Notes written
+  for him inside an app: at most 5 lines of under 12 words. Terminal progress: one-line status, no narration.
+- Times to the owner in **MYT (UTC+8)**; UTC only beside a DB/log stamp. Report headings use d-m-y
+  (14-5-2026); code, logs and provenance stay ISO.
+- Plain language first: a non-expert must follow the reason; jargon only as backup detail.
+- More report/format/doc rules (breakdowns, evidence, URLs, management docs, no Artifacts, "update everything",
+  mock-ups): [`owner-working-style.md`](.docs/03-development/owner-working-style.md) section 6.
+
+## Build quality in
+
+Owner rule (after a 2-day, 15-round bug hunt): build quality in while writing code; do not hunt for it after.
+Full playbook in [`owner-working-style.md`](.docs/03-development/owner-working-style.md).
+
+1. **Design risky work first** (security, money, orders, anything a viewer sees): one page with the rule, what
+   must never happen, the attack/edge list. Prefer fail-closed allowlists. A component that fails twice is
+   redesigned, not patched.
+2. **Tests first**, from that list (property/random-input tests for many input shapes; growth-ratio timing
+   tests for every regex or loop over user text). TDD by default: failing test, see it fail, minimum code,
+   refactor, never commit red.
+3. **Small, owned changes**: one feature or fix per branch, a few hundred lines. Fast checks every change
+   (pre-commit hook, quick test set).
+4. Before merging: one independent verifier on the EXACT final sha, full gate on the same sha, merged tree ==
+   gated tree. Deploy small and often; fix forward.
+5. **A hunt is an audit, not a loop**: agree the stop rule BEFORE round 1 (e.g. zero high/medium, lows
+   logged), cap at 3 rounds, close bug classes not instances, every bug becomes a permanent test.
 
 ## Windows/Env Gotchas
 
@@ -190,5 +405,8 @@ nothing reads is worse than none.
   host-key prompt hangs the run.
 - Never hardcode `$HOME\Downloads` or any personal path in a script handed to teammates. Test every
   copy-paste one-liner before documenting it.
+- Windows PowerShell 5.1 has no `&&`; justfile recipes need `[windows]`/`[unix]` splits; use `2>$null`, not `2>&1`.
+- Ship shell scripts as LF from the git index; a hook that exits 0 cannot talk to the model.
+- More OS/tooling traps: [`owner-working-style.md`](.docs/03-development/owner-working-style.md) section 7.
 
 **Secret files are deny-listed** in `.claude/settings.json` (`Read`/`Edit` of `.env`, `.env.local`, `.env.*.local`, `.env.development`, `.env.production`, `.env.staging`, `.env.test` - not `.env.example` - plus `*.pem`, `*.key`, `id_rsa*`, `credentials.json`; any other `.env.*` name is NOT covered, so add it before you create one) - adapted from claude-code-templates `cli-tool/components/settings/permissions/deny-sensitive-files.json` @ 8b1f883, MIT, (c) 2025 Daniel (San) Avila. The `secret_scanner.py` and `no_force_push.py` PreToolUse hooks sit beside it.

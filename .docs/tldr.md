@@ -25,6 +25,13 @@ and the commit/PR skills to use.]
 
 ---
 
+## [owner-working-style.md](03-development/owner-working-style.md)
+
+Longer playbooks behind the root `CLAUDE.md`: bounded bug hunts, running a fleet of agents, merge/CI
+hygiene, safety extras, report formats, Windows traps, and the log of resolved rule conflicts.
+
+---
+
 ## [deployment.md](04-deployment/deployment.md)
 
 [GROUND: one honest sentence — e.g. "This project runs locally only; there is no CI/CD

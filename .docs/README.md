@@ -36,6 +36,7 @@
 | Document | What it covers |
 | --- | --- |
 | [workflow.md](03-development/workflow.md) | Day-2 loop: recipes, quality gates, commit/PR conventions |
+| [owner-working-style.md](03-development/owner-working-style.md) | The owner's working style: playbooks (bug hunts, fleets, reports, traps) and the rule-conflict log |
 
 ## 04-deployment
 

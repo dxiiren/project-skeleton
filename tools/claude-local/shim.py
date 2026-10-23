@@ -252,6 +252,103 @@ def clamp_max_tokens(upstream: str, context_len: int, body: dict, headers: dict)
     return None, tag
 
 
+def repair_suffix(text: str):
+    """Smallest suffix that turns truncated tool-input JSON into valid JSON, or None (also None when
+    the text is already valid). Tried in order: "}" ; "\"}" ; close every open string and bracket by
+    counting unescaped openers outside strings."""
+    def ok(t):
+        try:
+            json.loads(t)
+            return True
+        except ValueError:
+            return False
+    if ok(text):
+        return None
+    for suffix in ("}", '"}'):
+        if ok(text + suffix):
+            return suffix
+    stack, in_str, esc = [], False, False
+    for ch in text:
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+        elif ch == '"':
+            in_str = True
+        elif ch in "{[":
+            stack.append("}" if ch == "{" else "]")
+        elif ch in "}]" and stack:
+            stack.pop()
+    suffix = ('"' if in_str else "") + "".join(reversed(stack))
+    if suffix and ok(text + suffix):
+        return suffix
+    return None
+
+
+class SSERepair:
+    """Relay filter for an Anthropic SSE stream. Every event is forwarded verbatim and in order.
+    The one change: SGLang sometimes drops the last input_json_delta ("}") of a tool_use block when the
+    model makes parallel tool calls, so Claude Code receives truncated JSON. At content_block_stop of a
+    tool_use block whose accumulated partial_json is not valid JSON, one extra input_json_delta carrying
+    the missing suffix is emitted just before that stop. Valid streams pass through byte-identical."""
+
+    def __init__(self, on_repair=None):
+        self.buf = b""
+        self.tool = {}          # block index -> accumulated partial_json (tool_use blocks only)
+        self.on_repair = on_repair
+
+    def feed(self, data: bytes):
+        self.buf += data
+        out = []
+        while True:
+            hits = [(i, n) for i, n in ((self.buf.find(b"\r\n\r\n"), 4), (self.buf.find(b"\n\n"), 2)) if i >= 0]
+            if not hits:
+                break
+            i, n = min(hits)
+            ev, self.buf = self.buf[:i + n], self.buf[i + n:]
+            out.append(self._event(ev))
+        return out
+
+    def flush(self):
+        rest, self.buf = self.buf, b""
+        return [rest] if rest else []
+
+    def _event(self, ev: bytes) -> bytes:
+        payload = None
+        for line in ev.split(b"\n"):
+            line = line.strip(b"\r")
+            if line.startswith(b"data:"):
+                try:
+                    payload = json.loads(line[5:].strip().decode("utf-8"))
+                except ValueError:
+                    payload = None
+                break
+        if not isinstance(payload, dict):
+            return ev
+        kind, idx = payload.get("type"), payload.get("index")
+        if kind == "content_block_start":
+            if (payload.get("content_block") or {}).get("type") == "tool_use":
+                self.tool[idx] = ""
+        elif kind == "content_block_delta":
+            d = payload.get("delta") or {}
+            if idx in self.tool and d.get("type") == "input_json_delta":
+                self.tool[idx] += d.get("partial_json") or ""
+        elif kind == "content_block_stop" and idx in self.tool:
+            acc = self.tool.pop(idx)
+            suffix = repair_suffix(acc) if acc.strip() else None
+            if suffix:
+                if self.on_repair:
+                    self.on_repair(idx, suffix, len(acc))
+                nl = "\r\n" if b"\r\n" in ev else "\n"
+                extra = {"type": "content_block_delta", "index": idx,
+                         "delta": {"type": "input_json_delta", "partial_json": suffix}}
+                return f"event: content_block_delta{nl}data: {json.dumps(extra)}{nl}{nl}".encode("utf-8") + ev
+        return ev
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.0"  # close-delimited responses: simplest faithful relay of SSE streams
 
@@ -342,16 +439,26 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         first = b""
         total = 0
+        repairer = None
+        if (status < 400 and self.path.split("?", 1)[0] == "/v1/messages" and isinstance(body, dict) and body.get("stream")
+                and "text/event-stream" in (resp.headers.get("content-type") or "")):
+            repairer = SSERepair(lambda i, suf, n: log(
+                f"repaired tool_use input_json block {i}: appended {suf!r} to {n} chars up={_short(upstream)}"))
         try:
             while True:
-                chunk = resp.read(4096)
+                chunk = resp.read(4096) if repairer is None else resp.read1(4096)
                 if not chunk:
                     break
                 if not first:
                     first = chunk[:160]
                 total += len(chunk)
-                self.wfile.write(chunk)
-                self.wfile.flush()
+                for piece in (repairer.feed(chunk) if repairer else [chunk]):
+                    self.wfile.write(piece)
+                    self.wfile.flush()
+            if repairer:
+                for piece in repairer.flush():
+                    self.wfile.write(piece)
+                    self.wfile.flush()
         except Exception as e:  # noqa: BLE001
             log(f"{self.command} {self.path} up={_short(upstream)}{note} => {status} relay aborted after {total}B: {e}")
             return

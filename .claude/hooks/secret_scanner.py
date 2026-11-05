@@ -74,6 +74,8 @@ def _git(*args: str) -> str:
     return out.stdout if out.returncode == 0 else ""
 
 
+_ORIG = [os.getcwd()]  # the hook's cwd before the chdir to the repo root
+_TOP = [""]
 _STAGED: set[str] = set()
 _READD = [False]
 _WORK: set[str] = set()  # paths whose working copy must be scanned too (re-added by the command)
@@ -95,7 +97,51 @@ def _texts(path: str) -> list[bytes]:
     return out
 
 
-_VALUE_OPTS = {"-m", "-F", "-C", "-c", "-t", "--message", "--file", "--author", "--date", "--template", "--reuse-message", "--reedit-message", "--cleanup", "--trailer", "-S"}
+_VALUE_OPTS = {"-m", "-F", "-C", "-c", "-t", "--message", "--file", "--author", "--date", "--template", "--reuse-message", "--reedit-message", "--cleanup", "--trailer", "-S", "--pathspec-from-file"}
+
+
+def _abs(p: str) -> str:
+    return p if os.path.isabs(p) else os.path.join(_ORIG[0], p)
+
+
+def _rel(p: str) -> str:
+    """A path typed in the command is relative to the original cwd; make it repo-root relative."""
+    if not _TOP[0]:
+        return p
+    try:
+        return os.path.relpath(_abs(p), _TOP[0]).replace("\\", "/")
+    except ValueError:
+        return p
+
+
+def _pathspec_file(f: str) -> list[str]:
+    """Pathspecs named in a --pathspec-from-file; `-` (stdin) cannot be read, so the commit is a re-add."""
+    try:
+        with open(_abs(f), encoding="utf-8", errors="ignore") as fh:
+            text = fh.read().replace(chr(0), chr(10))
+    except OSError:
+        return []
+    return [x.strip().strip(chr(34)).replace(chr(92), "/") for x in text.splitlines() if x.strip()]
+
+
+_LONG = ("pathspec-from-file", "all", "include", "only", "amend", "no-verify", "quiet", "verbose", "signoff",
+         "no-edit", "allow-empty", "allow-empty-message", "dry-run", "status", "no-status", "edit", "short",
+         "branch", "porcelain", "long", "null", "no-post-rewrite", "squash", "fixup", "reset-author",
+         "gpg-sign", "no-gpg-sign", "pathspec-file-nul", "untracked-files", "interactive", "patch")
+
+
+def _canon(t: str) -> str:
+    """git accepts abbreviated long options: expand them; an unknown long option is a re-add (fail closed)."""
+    if not t.startswith("--") or t == "--":
+        return t
+    key, eq, val = t[2:].partition("=")
+    names = _LONG + tuple(v[2:] for v in _VALUE_OPTS if v.startswith("--"))
+    if key in names:
+        return t
+    hits = {f for f in names if len(key) >= 3 and f.startswith(key)}
+    if len(hits) == 1:
+        return "--" + hits.pop() + eq + val
+    return "--all"  # unknown or ambiguous: scan the working files too
 
 
 def _commit_args(rest: str) -> tuple[bool, list[str]]:
@@ -104,10 +150,16 @@ def _commit_args(rest: str) -> tuple[bool, list[str]]:
         toks = shlex.split(re.split(r"&&|;|\|\|", rest)[0])
     except ValueError:
         toks = rest.split()
-    readd, paths, skip, dd = False, [], False, False
-    for t in toks:
+    readd, paths, skip, dd, pf = False, [], False, False, False
+    for t in map(_canon, toks):
         if skip:
             skip = False
+            if pf:  # value of `--pathspec-from-file F`
+                paths += _pathspec_file(t); pf = False
+        elif t.startswith("--pathspec-from-file="):
+            readd = True; paths += _pathspec_file(t.split("=", 1)[1])
+        elif t == "--pathspec-from-file":
+            readd = pf = skip = True
         elif dd or not t.startswith("-"):
             paths.append(t.replace("\\", "/")); readd = True
         elif t == "--":
@@ -130,7 +182,7 @@ def _candidates(command: str) -> list[str]:
         readd, paths = _commit_args(commit.group(1))
         if COMMIT_ALL.search(commit.group(1)) or readd:
             _READD[0] = True
-            files += [f for f in _git("diff", "--name-only").splitlines() if f] + paths
+            files += [f for f in _git("diff", "--name-only").splitlines() if f] + [_rel(x) for x in paths]
     for part in re.split(r"&&|;|\|\|", command):
         add = re.match(r"\s*git(?:\s+(?:-[cC]\s+\S+|--[\w-]+(?:=\S+)?))*\s+add\s+(.+)", part)
         if not add:
@@ -142,7 +194,7 @@ def _candidates(command: str) -> list[str]:
                 if len(line) > 3:
                     files.append(line[3:].strip().strip('"'))
         else:
-            files += [a for a in args if not a.startswith("-")]
+            files += [_rel(a) for a in args if not a.startswith("-")]
     seen: list[str] = []
     for f in files:
         f = f.replace("\\", "/")
@@ -175,11 +227,13 @@ def _scan(path: str) -> list[tuple[int, str]]:
 def main() -> int:
     top = _git("rev-parse", "--show-toplevel").strip()
     if top:
+        _TOP[0] = top
         os.chdir(top)
     try:
         payload = json.load(sys.stdin)
     except ValueError:
-        return 0
+        print("secret_scanner: unreadable hook input, blocked (fail closed)", file=sys.stderr)
+        return 2
     command = str(payload.get("tool_input", {}).get("command", ""))
     if not re.search(r"git(?:\s+(?:-[cC]\s+\S+|--[\w-]+(?:=\S+)?))*\s+commit", command):
         return 0
